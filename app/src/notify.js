@@ -22,7 +22,7 @@ export async function initNotifications() {
         visibility: 1,
         vibration: true,
         lights: true,
-        lightColor: '#950606',
+        lightColor: '#c0392c',
       });
     } else if ('Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission();

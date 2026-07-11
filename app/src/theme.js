@@ -9,7 +9,7 @@ export function applyTheme() {
   const dark = pref === 'dark' || (pref === 'system' && media.matches);
   document.documentElement.classList.toggle('dark', dark);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#131315' : '#f9f9f9');
+  if (meta) meta.setAttribute('content', dark ? '#1c0f0e' : '#f3ece4');
 }
 
 media.addEventListener('change', () => {

@@ -2,13 +2,13 @@
   "appId": "com.nfraiyan.refocus",
   "appName": "ReFocus",
   "webDir": "dist",
-  "backgroundColor": "#f9f9f9",
+  "backgroundColor": "#f3ece4",
   "android": {
-    "backgroundColor": "#f9f9f9"
+    "backgroundColor": "#f3ece4"
   },
   "plugins": {
     "LocalNotifications": {
-      "iconColor": "#950606"
+      "iconColor": "#c0392c"
     }
   }
 }

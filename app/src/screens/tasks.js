@@ -1,6 +1,9 @@
 // Tasks tab — ported from stitch tasks/code.html
 import { getTasks, addTask, toggleTask, dueLabel, dayKey, todayKey } from '../store.js';
-import { appHeader, bottomNav, fab, icon, esc, emptyState, showSheet, field, inputCls, primaryBtn, rerender } from '../ui.js';
+import {
+  appHeader, bottomNav, fab, icon, esc, emptyState, showSheet, field, inputCls,
+  primaryBtn, rerender, openDateTimeSheet, priorityPills, bindPriorityPills,
+} from '../ui.js';
 
 function taskRow(t) {
   const due = dueLabel(t);
@@ -61,37 +64,48 @@ export function render() {
   ${bottomNav('#/tasks')}`;
 }
 
+function dueButtonLabel(due) {
+  return due
+    ? due.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : 'No due date';
+}
+
 export function openAddTask(onDone) {
-  const now = new Date();
-  const defaultDate = dayKey(now);
+  // Default: end of today, matching the old form's 23:59 fallback.
+  let due = new Date();
+  due.setHours(23, 59, 0, 0);
+  let priority = 'medium';
+
   const { el, close } = showSheet(`
     <h2 class="text-headline-md text-on-surface mb-4">Add Task</h2>
     <form data-form>
       ${field('Task', `<input name="title" type="text" required class="${inputCls}" placeholder="What needs doing?" />`)}
-      <div class="grid grid-cols-2 gap-3">
-        ${field('Due date', `<input name="date" type="date" value="${defaultDate}" class="${inputCls}" />`)}
-        ${field('Time', `<input name="time" type="time" class="${inputCls}" />`)}
-      </div>
-      ${field('Priority', `
-        <select name="priority" class="${inputCls}">
-          <option value="low">Low</option>
-          <option value="medium" selected>Medium</option>
-          <option value="high">High</option>
-        </select>`)}
+      ${field('Due', `
+        <button type="button" data-due-trigger class="${inputCls} w-full flex justify-between items-center text-left cursor-pointer">
+          <span data-due-label class="text-on-surface">${dueButtonLabel(due)}</span>
+          ${icon('calendar_month', 'text-secondary')}
+        </button>`)}
+      ${field('Priority', priorityPills(priority))}
       ${primaryBtn('Add Task', 'type="submit"')}
     </form>`);
+
+  el.querySelector('[data-due-trigger]').addEventListener('click', () => {
+    openDateTimeSheet({
+      initial: due,
+      onSave: (date) => {
+        due = date;
+        el.querySelector('[data-due-label]').textContent = dueButtonLabel(due);
+      },
+    });
+  });
+
+  bindPriorityPills(el, (p) => { priority = p; });
+
   el.querySelector('[data-form]').addEventListener('submit', (e) => {
     e.preventDefault();
-    const f = new FormData(e.target);
-    const date = String(f.get('date'));
-    const time = String(f.get('time'));
-    let due = null;
-    if (date) due = new Date(`${date}T${time || '23:59'}`).toISOString();
-    addTask({
-      title: String(f.get('title')).trim(),
-      due,
-      priority: String(f.get('priority')),
-    });
+    const title = String(new FormData(e.target).get('title')).trim();
+    if (!title) return;
+    addTask({ title, due: due ? due.toISOString() : null, priority });
     close();
     onDone();
   });
