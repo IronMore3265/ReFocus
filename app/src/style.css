@@ -352,3 +352,55 @@ input[type='text'], input[type='number'], input[type='date'], input[type='time']
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Custom Wheel Picker for Date/Time ---------- */
+.wheel-picker {
+  display: flex;
+  height: 150px;
+  position: relative;
+  background: var(--color-surface-container-lowest);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.wheel-picker::before, .wheel-picker::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; height: 55px;
+  pointer-events: none;
+  z-index: 10;
+}
+.wheel-picker::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--color-surface-container-lowest), transparent);
+  border-bottom: 1px solid var(--color-surface-container);
+}
+.wheel-picker::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--color-surface-container-lowest), transparent);
+  border-top: 1px solid var(--color-surface-container);
+}
+.wheel-column {
+  flex: 1;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  position: relative;
+}
+.wheel-column::-webkit-scrollbar { display: none; }
+.wheel-pad { height: 55px; }
+.wheel-item {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: var(--text-body-lg);
+  color: var(--color-secondary);
+  transition: color 0.15s, font-weight 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+.wheel-item.active {
+  color: var(--color-on-surface);
+  font-weight: bold;
+  transform: scale(1.1);
+}
