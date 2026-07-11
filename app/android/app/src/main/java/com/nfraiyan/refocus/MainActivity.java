@@ -1,4 +1,4 @@
-package com.nfraiyan.focussuite;
+package com.nfraiyan.refocus;
 
 import com.getcapacitor.BridgeActivity;
 
