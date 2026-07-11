@@ -16,39 +16,39 @@
   src: url('./assets/fonts/material-symbols.woff2') format('woff2');
 }
 
-/* ---------- Serene Monochrome design tokens (from serene_monochrome/DESIGN.md) ---------- */
+/* ---------- Ember Serenity design tokens (from serene_monochrome/DESIGN.md) ---------- */
 @theme {
   --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
 
-  --color-surface: #f9f9f9;
-  --color-surface-dim: #dadada;
-  --color-surface-bright: #f9f9f9;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f3f3f3;
-  --color-surface-container: #eeeeee;
-  --color-surface-container-high: #e8e8e8;
-  --color-surface-container-highest: #e2e2e2;
-  --color-surface-variant: #e2e2e2;
-  --color-on-surface: #1a1c1c;
-  --color-on-surface-variant: #5a403d;
-  --color-primary: #6c0002;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #950606;
-  --color-on-primary-container: #ff9d90;
-  --color-primary-fixed: #ffdad5;
-  --color-secondary: #5f5e5e;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #e2dfde;
-  --color-on-secondary-container: #636262;
-  --color-secondary-fixed-dim: #c8c6c5;
-  --color-outline: #8f706b;
-  --color-outline-variant: #e3beb9;
+  --color-surface: #f3ece4;
+  --color-surface-dim: #e0d3c2;
+  --color-surface-bright: #fbf6ef;
+  --color-surface-container-lowest: #fffdf9;
+  --color-surface-container-low: #f8f1e7;
+  --color-surface-container: #f1e7da;
+  --color-surface-container-high: #e8dccc;
+  --color-surface-container-highest: #dfd0bc;
+  --color-surface-variant: #e8dccc;
+  --color-on-surface: #373234;
+  --color-on-surface-variant: #6a544c;
+  --color-primary: #780000;
+  --color-on-primary: #fffdf9;
+  --color-primary-container: #c0392c;
+  --color-on-primary-container: #ffdad3;
+  --color-primary-fixed: #fadfd9;
+  --color-secondary: #6a5d55;
+  --color-on-secondary: #fffdf9;
+  --color-secondary-container: #e8dccc;
+  --color-on-secondary-container: #574a43;
+  --color-secondary-fixed-dim: #c9b6a2;
+  --color-outline: #b09a88;
+  --color-outline-variant: #e0d2c0;
   --color-error: #ba1a1a;
   --color-on-error: #ffffff;
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
-  --color-background: #f9f9f9;
-  --color-on-background: #1a1c1c;
+  --color-background: #f3ece4;
+  --color-on-background: #373234;
 
   --text-headline-xl: 48px;
   --text-headline-xl--line-height: 56px;
@@ -93,59 +93,80 @@
    accent-soft = text/stroke accent, brightens in dark mode
    accent-tint = tinted container background */
 @theme inline {
-  --color-accent: var(--accent, #950606);
-  --color-accent-soft: var(--accent-soft, #950606);
-  --color-accent-tint: var(--accent-tint, #ffdad5);
+  --color-accent: var(--accent, #c0392c);
+  --color-accent-soft: var(--accent-soft, #a82d24);
+  --color-accent-tint: var(--accent-tint, #fadfd9);
 }
 
-/* ---------- Section accent palettes ---------- */
+/* ---------- Section accent palettes — three shades of the brand red ---------- */
 :root, .accent-timer {
-  --accent: #950606;
-  --accent-soft: #950606;
-  --accent-tint: #ffdad5;
+  --accent: #c0392c;
+  --accent-soft: #a82d24;
+  --accent-tint: #fadfd9;
 }
 .accent-reading {
-  --accent: #1d43c8;
-  --accent-soft: #1d43c8;
-  --accent-tint: #dce1ff;
+  --accent: #780000;
+  --accent-soft: #8c1a14;
+  --accent-tint: #efdbd5;
 }
 .accent-tasks {
-  --accent: #0b6e4f;
-  --accent-soft: #0b6e4f;
-  --accent-tint: #d7f0e4;
+  --accent: #9d4c3d;
+  --accent-soft: #8a3d2f;
+  --accent-tint: #f3e0d6;
+}
+
+/* ---------- Task priority — the ramp runs light → deep as priority rises.
+   *-fill is the selected background, *-ink the resting text/border colour,
+   *-on the text riding on the fill (per-priority: the pale low fill needs dark
+   text, the deep high fill needs light text). ---------- */
+:root {
+  --prio-low-fill: #e0ac9d;    --prio-low-ink: #7a4032;    --prio-low-on: #4a1f16;
+  --prio-medium-fill: #c0392c; --prio-medium-ink: #a82d24; --prio-medium-on: #fff5f0;
+  --prio-high-fill: #6f1a12;   --prio-high-ink: #6f1a12;   --prio-high-on: #fff5f0;
 }
 
 /* ---------- Dark theme ---------- */
 .dark {
-  --color-surface: #131315;
-  --color-surface-dim: #0d0d0f;
-  --color-surface-bright: #1c1c1f;
-  --color-surface-container-lowest: #1b1b1e;
-  --color-surface-container-low: #202024;
-  --color-surface-container: #26262a;
-  --color-surface-container-high: #2d2d31;
-  --color-surface-container-highest: #37373b;
-  --color-surface-variant: #3a3a3e;
-  --color-on-surface: #e7e5e4;
-  --color-on-surface-variant: #d8b8b2;
-  --color-secondary: #a8a6a5;
-  --color-secondary-container: #3a3938;
-  --color-on-secondary-container: #cfcecd;
-  --color-secondary-fixed-dim: #6d6b6a;
-  --color-outline: #a08c88;
-  --color-outline-variant: #4d403d;
-  --color-primary-container: #ff9d90;
+  --color-surface: #1c0f0e;
+  --color-surface-dim: #150908;
+  --color-surface-bright: #2e1917;
+  --color-surface-container-lowest: #170b0a;
+  --color-surface-container-low: #241211;
+  --color-surface-container: #2b1614;
+  --color-surface-container-high: #351c19;
+  --color-surface-container-highest: #40221e;
+  --color-surface-variant: #4a2a25;
+  --color-on-surface: #f2e3d0;
+  --color-on-surface-variant: #d3b79c;
+  --color-secondary: #c0a48c;
+  --color-secondary-container: #3a211c;
+  --color-on-secondary-container: #e4cdb4;
+  --color-secondary-fixed-dim: #8a7362;
+  --color-outline: #8a6455;
+  --color-outline-variant: #4a2a25;
+  /* on-primary is the text/icon color that rides on --color-accent fills, so it
+     stays a light cream in both themes — it is not the M3 "on-primary" pairing. */
+  --color-primary: #ffb4a9;
+  --color-on-primary: #fff5f0;
+  --color-primary-container: #9d2a20;
+  --color-on-primary-container: #ffdad3;
   --color-primary-fixed: #3c1210;
   --color-error: #ffb4ab;
   --color-on-error: #690005;
   --color-error-container: #4a1210;
   --color-on-error-container: #ffdad6;
-  --color-background: #131315;
-  --color-on-background: #e7e5e4;
+  --color-background: #1c0f0e;
+  --color-on-background: #f2e3d0;
 }
-.dark, .dark .accent-timer { --accent: #c62f28; --accent-soft: #ff9d90; --accent-tint: #3c1210; }
-.dark .accent-reading { --accent: #4a63d0; --accent-soft: #a9b8ff; --accent-tint: #1a2450; }
-.dark .accent-tasks { --accent: #178a62; --accent-soft: #8ad9b8; --accent-tint: #0e2b21; }
+.dark, .dark .accent-timer { --accent: #d84339; --accent-soft: #ff9d90; --accent-tint: #3c1210; }
+.dark .accent-reading { --accent: #b22a20; --accent-soft: #ffb4a9; --accent-tint: #451312; }
+.dark .accent-tasks { --accent: #b05a48; --accent-soft: #f0ac96; --accent-tint: #40241d; }
+/* Dark inverts the ramp's lightness so it still reads as rising intensity. */
+.dark {
+  --prio-low-fill: #7d4a40;    --prio-low-ink: #e0ab9c;    --prio-low-on: #fff5f0;
+  --prio-medium-fill: #c93b30; --prio-medium-ink: #ff9d90; --prio-medium-on: #fff5f0;
+  --prio-high-fill: #ff6b5c;   --prio-high-ink: #ff8272;   --prio-high-on: #3a0e0a;
+}
 
 /* ---------- Base ---------- */
 html, body {
@@ -208,7 +229,7 @@ html, body {
   top: 2px;
   width: 6px;
   height: 11px;
-  border: solid #ffffff;
+  border: solid var(--color-on-primary);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -259,7 +280,8 @@ html, body {
 
 .modal-backdrop { animation: backdropIn 0.2s ease-out both; }
 @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
-.modal-sheet { animation: sheetIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* contain stops a scrolled-to-the-end sheet from chaining into the page behind it */
+.modal-sheet { animation: sheetIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; overscroll-behavior: contain; }
 @keyframes sheetIn {
   from { transform: translateY(48px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -386,6 +408,9 @@ input[type='text'], input[type='number'], input[type='date'], input[type='time']
   scrollbar-width: none;
   position: relative;
 }
+/* the date column carries the longest labels ("Mon, Jul 13") — give it the room */
+.wheel-column[data-wheel='date'] { flex: 2.2; }
+.wheel-column[data-wheel='ampm'] { flex: 0.8; }
 .wheel-column::-webkit-scrollbar { display: none; }
 .wheel-pad { height: 55px; }
 .wheel-item {
@@ -398,9 +423,27 @@ input[type='text'], input[type='number'], input[type='date'], input[type='time']
   color: var(--color-secondary);
   transition: color 0.15s, font-weight 0.15s, transform 0.15s;
   cursor: pointer;
+  white-space: nowrap; /* a wrapped label would blow past the 40px snap row */
 }
 .wheel-item.active {
   color: var(--color-on-surface);
   font-weight: bold;
   transform: scale(1.1);
+}
+
+/* ---------- Priority pills ---------- */
+.prio-low { --prio-fill: var(--prio-low-fill); --prio-ink: var(--prio-low-ink); --prio-on: var(--prio-low-on); }
+.prio-medium { --prio-fill: var(--prio-medium-fill); --prio-ink: var(--prio-medium-ink); --prio-on: var(--prio-medium-on); }
+.prio-high { --prio-fill: var(--prio-high-fill); --prio-ink: var(--prio-high-ink); --prio-on: var(--prio-high-on); }
+
+.prio-pill {
+  background: color-mix(in srgb, var(--prio-fill) 14%, transparent);
+  border-color: color-mix(in srgb, var(--prio-fill) 45%, transparent);
+  color: var(--prio-ink);
+}
+.prio-pill.is-selected {
+  background: var(--prio-fill);
+  border-color: var(--prio-fill);
+  color: var(--prio-on);
+  font-weight: 700;
 }

@@ -1,6 +1,6 @@
 # ReFocus
 
-A minimalist focus app for Android — Pomodoro timer, reading tracker, and tasks — built from the Stitch design in `stitch_minimalist_focus_suite/` ("Serene Monochrome" design system).
+A minimalist focus app for Android — Pomodoro timer, reading tracker, and tasks — built from the Stitch design in `stitch_minimalist_focus_suite/` ("Ember Serenity" design system — see `serene_monochrome/DESIGN.md`, the source of truth for color).
 
 Web app (Vite + Tailwind v4, vanilla JS) wrapped with Capacitor. All data stays on the device in localStorage.
 

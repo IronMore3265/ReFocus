@@ -1,6 +1,6 @@
 // Profile — name + lifetime totals.
 import { getProfile, setProfile, lifetimeStats } from '../store.js';
-import { subHeader, icon, esc, inputCls } from '../ui.js';
+import { subHeader, icon, esc, inputCls, showSheet, rerender } from '../ui.js';
 
 export function render() {
   const p = getProfile();
@@ -27,9 +27,14 @@ export function render() {
           ${icon('edit', 'text-white')}
         </div>
       </button>
-      <input data-name value="${esc(p.name)}" placeholder="Your name"
-        class="${inputCls} !bg-transparent !border-transparent text-center !text-2xl font-semibold focus:!border-surface-container-highest max-w-xs" />
-      <span class="text-label-sm text-secondary mt-1 flex items-center gap-1">${icon('edit', 'text-[12px]')} tap name to edit</span>
+      <div class="flex items-center gap-1 max-w-xs">
+        <input data-name value="${esc(p.name)}" placeholder="Your name"
+          class="${inputCls} !bg-transparent !border-transparent text-center !text-2xl font-semibold focus:!border-surface-container-highest" />
+        <button data-action="edit-name" aria-label="Edit name"
+          class="shrink-0 p-2 rounded-full text-secondary active:opacity-70 transition-opacity">
+          ${icon('edit', 'text-[18px]')}
+        </button>
+      </div>
     </div>
 
     <h2 class="text-label-md uppercase tracking-wider text-secondary mb-3 px-1">Lifetime</h2>
@@ -45,40 +50,56 @@ export function render() {
   </main>`;
 }
 
+const AVATAR_SEEDS = [
+  'Felix', 'Aneka', 'Jocelyn', 'Robert', 'Jack', 'Oliver', 'Bella', 'Luna',
+  'Cleo', 'Leo', 'Kitty', 'Simba', 'Loki', 'Nala', 'Oreo', 'Coco',
+  'Angel', 'Misty', 'Smokey', 'Mia', 'Peanut', 'Lucky', 'Sam', 'Milo',
+];
+
+const avatarUrl = (seed) =>
+  `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=transparent`;
+
+// The picture is stored in localStorage and rendered in the app bar on every screen,
+// so inline the SVG as a data URI — a remote URL would blank out offline in the APK.
+async function inlineAvatar(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const svg = await res.text();
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  } catch {
+    return url; // offline when picking — fall back to the remote URL
+  }
+}
+
 export function mount(root) {
-  root.querySelector('[data-name]').addEventListener('change', (e) => {
+  const nameInput = root.querySelector('[data-name]');
+  nameInput.addEventListener('change', (e) => {
     setProfile({ name: e.target.value.trim() });
+    rerender(); // refresh the app-bar avatar/initial straight away
+  });
+  root.querySelector('[data-action="edit-name"]').addEventListener('click', () => {
+    nameInput.focus();
+    nameInput.select();
   });
 
   root.querySelector('[data-action="change-pic"]').addEventListener('click', () => {
-    const seeds = ['Felix', 'Aneka', 'Jocelyn', 'Robert', 'Jack', 'Oliver', 'Bella', 'Luna', 'Cleo', 'Leo', 'Kitty', 'Simba', 'Loki', 'Nala', 'Oreo', 'Coco', 'Angel', 'Misty', 'Smokey', 'Mia', 'Peanut', 'Lucky', 'Sam', 'Milo'];
-    const grid = seeds.map(s => `
-      <button data-avatar="https://api.dicebear.com/7.x/notionists/svg?seed=${s}&backgroundColor=transparent" class="w-16 h-16 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors p-2 active:scale-95">
-        <img src="https://api.dicebear.com/7.x/notionists/svg?seed=${s}&backgroundColor=transparent" class="w-full h-full" />
-      </button>
-    `).join('');
-    
-    import('../ui.js').then(({ showSheet, rerender }) => {
-      showSheet(`
-        <h2 class="text-headline-md text-on-surface mb-4 px-2">Choose Avatar</h2>
-        <div class="grid grid-cols-4 gap-4 pb-8 px-2" data-avatar-grid>
-          ${grid}
-        </div>
-      `);
+    const { el, close } = showSheet(`
+      <h2 class="text-headline-md text-on-surface mb-4 px-2">Choose Avatar</h2>
+      <div class="grid grid-cols-4 gap-4 pb-8 px-2" data-avatar-grid>
+        ${AVATAR_SEEDS.map((s) => `
+        <button data-seed="${s}" class="w-16 h-16 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors p-2 active:scale-95">
+          <img src="${avatarUrl(s)}" alt="" class="w-full h-full" />
+        </button>`).join('')}
+      </div>`);
 
-      setTimeout(() => {
-        const gridEl = document.querySelector('[data-avatar-grid]');
-        if(gridEl) {
-          gridEl.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-avatar]');
-            if (btn) {
-              setProfile({ picture: btn.getAttribute('data-avatar') });
-              document.querySelector('.modal-backdrop')?.click(); // close sheet
-              setTimeout(rerender, 100);
-            }
-          });
-        }
-      }, 100);
+    el.querySelector('[data-avatar-grid]').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-seed]');
+      if (!btn) return;
+      const picture = await inlineAvatar(avatarUrl(btn.getAttribute('data-seed')));
+      setProfile({ picture });
+      close();
+      rerender();
     });
   });
 }

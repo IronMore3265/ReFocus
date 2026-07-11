@@ -23,12 +23,12 @@ function dial(accentVar, sweep = false) {
 
 const slides = [
   {
-    art: () => dial('var(--accent, #950606)'),
+    art: () => dial('var(--accent, #c0392c)'),
     title: 'Welcome to ReFocus',
     copy: 'A calm home for your focus sessions, reading, and tasks. Everything stays on your phone — no accounts, no cloud.',
   },
   {
-    art: () => dial('#950606', true),
+    art: () => dial('#c0392c', true),
     title: 'Focus in rhythms',
     copy: 'Run distraction-free pomodoro sessions with smart breaks. ReFocus alerts you when time is up, even if you switch apps.',
   },

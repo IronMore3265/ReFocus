@@ -1,9 +1,9 @@
 // Stats dashboard — ported from stitch focus_dashboard/code.html
 import {
-  focusMinutesOn, sessionsOn, todayKey, weeklyActivity, currentStreak,
+  focusMinutesOn, sessionsOn, todayKey, weeklyActivity, currentStreak, longestStreak,
   allTrackStatuses,
 } from '../store.js';
-import { subHeader, icon, esc, progressRing } from '../ui.js';
+import { subHeader, icon, esc } from '../ui.js';
 import { medal } from './achievements.js';
 
 export function render() {
@@ -13,6 +13,7 @@ export function render() {
   const week = weeklyActivity();
   const max = Math.max(60, ...week.map((d) => d.minutes));
   const streak = currentStreak();
+  const best = longestStreak();
   const ranked = allTrackStatuses()
     .filter((s) => s.level > 0)
     .sort((a, b) => b.level - a.level || b.progress - a.progress)
@@ -47,17 +48,38 @@ export function render() {
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex items-center gap-3 mb-stack-sm">
-        ${icon('local_fire_department', 'text-accent-soft')}
-        <h2 class="text-headline-md text-on-surface">Daily Streaks</h2>
+        ${icon('local_fire_department', 'text-accent-soft', streak > 0)}
+        <h2 class="text-headline-md text-on-surface">Daily Streak</h2>
       </div>
-      <div class="flex justify-center py-2">
-        ${progressRing({
-          progress: Math.min(1, streak / 30), size: 176, stroke: 14,
-          centerHtml: `
-            <span class="text-headline-lg-mobile text-on-surface font-bold">${streak}</span>
-            <span class="text-label-sm text-secondary uppercase">day${streak === 1 ? '' : 's'}</span>`,
-        })}
+
+      <div class="flex items-baseline gap-2 mb-stack-md">
+        <span class="text-headline-lg-mobile text-on-surface font-bold">${streak}</span>
+        <span class="text-body-md text-secondary">day${streak === 1 ? '' : 's'} in a row</span>
+        <span class="ml-auto text-label-sm text-secondary uppercase tracking-wider">Best ${best}</span>
       </div>
+
+      <div class="flex gap-1.5">
+        ${week.map((d, i) => {
+          const lit = d.minutes > 0;
+          const isToday = i === todayIdx;
+          const cell = lit
+            ? 'bg-accent text-on-primary border-accent'
+            : 'text-surface-dim border-surface-container-highest';
+          return `
+          <div class="flex flex-col items-center gap-1.5 flex-1">
+            <div class="w-full h-10 rounded-xl flex items-center justify-center transition-colors ${cell} ${
+              isToday ? 'border-2 border-accent-soft' : 'border'
+            }">
+              ${icon('local_fire_department', 'text-[18px]', lit)}
+            </div>
+            <span class="text-label-sm ${isToday ? 'text-accent-soft font-bold' : 'text-secondary'}">${d.label}</span>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <p class="text-body-sm text-secondary mt-stack-sm">
+        ${streak > 0 ? 'Focus today to keep it burning.' : 'Finish a focus session to start a streak.'}
+      </p>
     </div>
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">

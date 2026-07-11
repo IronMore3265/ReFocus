@@ -3,7 +3,7 @@ import { getProfile } from './store.js';
 import { tickTimer, onTimerChange } from './engine.js';
 import { initNotifications } from './notify.js';
 import { applyTheme } from './theme.js';
-import { icon, showSheet } from './ui.js';
+import { icon, showSheet, avatarEl } from './ui.js';
 
 import * as home from './screens/home.js';
 import * as timer from './screens/timer.js';
@@ -24,18 +24,18 @@ import * as onboarding from './screens/onboarding.js';
 // `accent` scopes the section color profile (see style.css .accent-*)
 const routes = [
   { pattern: /^#\/home$/, screen: home },
-  { pattern: /^#\/timer$/, screen: timer },
-  { pattern: /^#\/reading$/, screen: reading },
-  { pattern: /^#\/tasks$/, screen: tasks },
+  { pattern: /^#\/timer$/, screen: timer, accent: 'timer' },
+  { pattern: /^#\/reading$/, screen: reading, accent: 'reading' },
+  { pattern: /^#\/tasks$/, screen: tasks, accent: 'tasks' },
   { pattern: /^#\/stats$/, screen: stats },
   { pattern: /^#\/settings$/, screen: settings },
   { pattern: /^#\/profile$/, screen: profile },
-  { pattern: /^#\/book\/(\w+)$/, screen: bookDetail },
-  { pattern: /^#\/task\/(\w+)$/, screen: taskDetail },
-  { pattern: /^#\/complete$/, screen: sessionComplete },
+  { pattern: /^#\/book\/(\w+)$/, screen: bookDetail, accent: 'reading' },
+  { pattern: /^#\/task\/(\w+)$/, screen: taskDetail, accent: 'tasks' },
+  { pattern: /^#\/complete$/, screen: sessionComplete, accent: 'timer' },
   { pattern: /^#\/history$/, screen: historyScreen },
   { pattern: /^#\/achievements$/, screen: achievements },
-  { pattern: /^#\/shelf$/, screen: shelf },
+  { pattern: /^#\/shelf$/, screen: shelf, accent: 'reading' },
   { pattern: /^#\/onboarding$/, screen: onboarding },
 ];
 
@@ -100,7 +100,10 @@ function openMenu() {
     ${item('#/achievements', 'trophy', 'Achievements')}
     ${item('#/shelf', 'collections_bookmark', 'Finished Shelf')}
     ${item('#/settings', 'settings', 'Settings')}
-    ${item('#/profile', 'account_circle', 'Profile')}
+    <button data-nav="#/profile" data-close class="w-full flex items-center gap-4 px-2 py-4 border-b border-surface-container text-on-surface active:bg-surface-bright transition-colors">
+      ${avatarEl('w-6 h-6')}
+      <span class="text-body-md">Profile</span>
+    </button>
   `);
 }
 
