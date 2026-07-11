@@ -44,4 +44,4 @@ APK output: `app\android\app\build\outputs\apk\debug\app-debug.apk`
 ## Notes
 
 - The debug APK is signed with the debug keystore — fine for personal use, not for the Play Store. For a release build: `.\gradlew assembleRelease` plus a signing keystore (see Capacitor docs).
-- App ID: `com.nfraiyan.focussuite`
+- App ID: `com.nfraiyan.refocus` (was `com.nfraiyan.focussuite` before v0.2.3 — uninstall any older build before installing, Android treats it as a separate app)
