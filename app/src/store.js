@@ -85,7 +85,7 @@ export function setSettings(patch) {
 }
 
 export function getProfile() {
-  return { name: '', onboarded: false, ...load('profile', {}) };
+  return { name: '', picture: '', onboarded: false, ...load('profile', {}) };
 }
 export function setProfile(patch) {
   save('profile', { ...getProfile(), ...patch });

@@ -30,7 +30,7 @@ export function render() {
     <div class="accent-timer bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md flex flex-col items-center">
       <div class="w-full flex justify-between items-center mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Active Session</span>
-        <button data-nav="#/timer" class="text-accent-soft">${icon('more_horiz')}</button>
+        <button data-nav="#/timer" class="text-secondary">${icon('arrow_forward')}</button>
       </div>
       <div data-ring-wrap class="relative">
         ${running ? '<div class="absolute inset-2 rounded-full border-2 border-accent-soft opacity-20 pulse-ring pointer-events-none"></div>' : ''}
@@ -48,10 +48,10 @@ export function render() {
     </div>
 
     <!-- Currently reading (blue) -->
-    <button ${book ? `data-nav="#/book/${book.id}"` : 'data-nav="#/reading"'} class="accent-reading text-left bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md active:bg-surface-bright transition-colors">
+    <button ${book ? `data-nav="#/book/${book.id}"` : 'data-nav="#/reading"'} class="text-left bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md active:bg-surface-bright transition-colors">
       <div class="flex justify-between items-start mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Currently Reading</span>
-        ${icon('open_in_new', 'text-secondary')}
+        <div class="text-secondary">${icon('arrow_forward')}</div>
       </div>
       ${book ? `
       <div class="flex gap-gutter items-center">
@@ -70,7 +70,7 @@ export function render() {
     </button>
 
     <!-- Next task (green) -->
-    <div class="accent-tasks bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
+    <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex justify-between items-start mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Next Task</span>
         <button data-nav="#/tasks" class="text-secondary">${icon('arrow_forward')}</button>

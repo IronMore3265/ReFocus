@@ -24,18 +24,18 @@ import * as onboarding from './screens/onboarding.js';
 // `accent` scopes the section color profile (see style.css .accent-*)
 const routes = [
   { pattern: /^#\/home$/, screen: home },
-  { pattern: /^#\/timer$/, screen: timer, accent: 'timer' },
-  { pattern: /^#\/reading$/, screen: reading, accent: 'reading' },
-  { pattern: /^#\/tasks$/, screen: tasks, accent: 'tasks' },
+  { pattern: /^#\/timer$/, screen: timer },
+  { pattern: /^#\/reading$/, screen: reading },
+  { pattern: /^#\/tasks$/, screen: tasks },
   { pattern: /^#\/stats$/, screen: stats },
   { pattern: /^#\/settings$/, screen: settings },
   { pattern: /^#\/profile$/, screen: profile },
-  { pattern: /^#\/book\/(\w+)$/, screen: bookDetail, accent: 'reading' },
-  { pattern: /^#\/task\/(\w+)$/, screen: taskDetail, accent: 'tasks' },
-  { pattern: /^#\/complete$/, screen: sessionComplete, accent: 'timer' },
+  { pattern: /^#\/book\/(\w+)$/, screen: bookDetail },
+  { pattern: /^#\/task\/(\w+)$/, screen: taskDetail },
+  { pattern: /^#\/complete$/, screen: sessionComplete },
   { pattern: /^#\/history$/, screen: historyScreen },
   { pattern: /^#\/achievements$/, screen: achievements },
-  { pattern: /^#\/shelf$/, screen: shelf, accent: 'reading' },
+  { pattern: /^#\/shelf$/, screen: shelf },
   { pattern: /^#\/onboarding$/, screen: onboarding },
 ];
 
