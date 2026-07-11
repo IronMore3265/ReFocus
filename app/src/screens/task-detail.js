@@ -6,7 +6,7 @@ const PRIORITIES = ['low', 'medium', 'high'];
 
 export function render(id) {
   const t = getTask(id);
-  if (!t) return `${subHeader('Task')}<main class="pt-24 px-margin-mobile">${emptyState('error', 'Task not found', 'It may have been deleted.')}</main>`;
+  if (!t) return `${subHeader('Task')}<main class="pt-page px-margin-mobile">${emptyState('error', 'Task not found', 'It may have been deleted.')}</main>`;
 
   const due = dueLabel(t);
   const dueDate = t.due ? dayKey(new Date(t.due)) : '';
@@ -14,7 +14,7 @@ export function render(id) {
 
   return `
   ${subHeader('Task', `<button data-action="delete" class="p-3 text-error">${icon('delete')}</button>`)}
-  <main class="pt-24 pb-16 px-margin-mobile max-w-2xl mx-auto page-enter">
+  <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
 
     <div class="flex items-start gap-4 mb-stack-md">
       <input data-action="toggle" class="task-checkbox mt-2" type="checkbox" ${t.done ? 'checked' : ''} />
@@ -41,7 +41,7 @@ export function render(id) {
         ${PRIORITIES.map((p) => `
         <button data-priority="${p}" class="flex-1 py-2 rounded-full text-label-md capitalize border transition-colors ${
           t.priority === p
-            ? 'bg-primary-container text-on-primary border-primary-container'
+            ? 'bg-accent text-on-primary border-accent-soft'
             : 'border-surface-container-highest text-secondary'
         }">${p}</button>`).join('')}
       </div>

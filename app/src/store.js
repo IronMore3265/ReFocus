@@ -65,7 +65,17 @@ const DEFAULT_SETTINGS = {
   sound: true,
   vibration: true,
   dailyGoalMin: 120,
+  theme: 'system', // 'light' | 'dark' | 'system'
 };
+
+// Custom completion sound picked from the device (stored as a data URL).
+export function getCustomSound() {
+  return load('customSound', null); // { name, dataUrl } | null
+}
+export function setCustomSound(sound) {
+  if (sound === null) localStorage.removeItem(PREFIX + 'customSound');
+  else save('customSound', sound);
+}
 
 export function getSettings() {
   return { ...DEFAULT_SETTINGS, ...load('settings', {}) };
@@ -258,56 +268,84 @@ export function weeklyActivity() {
   return out;
 }
 
-// ---------- achievements ----------
-export const ACHIEVEMENTS = [
-  { id: 'first-focus', icon: 'flag', title: 'First Steps', desc: 'Complete your first focus session' },
-  { id: 'deep-focus', icon: 'star', title: 'Deep Focus Master', desc: '3 hours of focus in one day' },
-  { id: 'task-crusher', icon: 'task_alt', title: 'Task Crusher', desc: 'Complete 10 tasks in one day' },
-  { id: 'week-streak', icon: 'local_fire_department', title: 'Week of Focus', desc: 'Keep a 7-day streak' },
-  { id: 'bookworm', icon: 'auto_stories', title: 'Bookworm', desc: 'Finish your first book' },
-  { id: 'page-turner', icon: 'menu_book', title: 'Page Turner', desc: 'Read 100 pages in total' },
-  { id: 'early-bird', icon: 'wb_sunny', title: 'Early Bird', desc: 'Start a session before 7 AM' },
-  { id: 'night-owl', icon: 'dark_mode', title: 'Night Owl', desc: 'Start a session after 10 PM' },
-  { id: 'marathon', icon: 'directions_run', title: 'Marathon', desc: 'Complete 25 focus sessions' },
-  { id: 'librarian', icon: 'collections_bookmark', title: 'Librarian', desc: 'Finish 3 books' },
+// ---------- tiered achievements ----------
+// Every track levels up through the same 7 tiers; each tier has its own
+// threshold per track. Level 0 = unranked.
+export const TIERS = [
+  { id: 'bronze', name: 'Bronze', color: '#cd7f32' },
+  { id: 'silver', name: 'Silver', color: '#8e9aa3' },
+  { id: 'gold', name: 'Gold', color: '#d4a017' },
+  { id: 'pearl', name: 'Pearl', color: '#c9a9c8' },
+  { id: 'ruby', name: 'Ruby', color: '#e0115f' },
+  { id: 'sapphire', name: 'Sapphire', color: '#2159c4' },
+  { id: 'diamond', name: 'Diamond', color: '#3ec6dd' },
 ];
 
-export function unlockedAchievements() {
-  const sessions = getSessions();
-  const tasks = getTasks();
-  const unlocked = new Set();
-
-  if (sessions.length >= 1) unlocked.add('first-focus');
-  if (sessions.length >= 25) unlocked.add('marathon');
-
-  const byDay = {};
-  for (const s of sessions) byDay[s.day] = (byDay[s.day] || 0) + s.minutes;
-  if (Object.values(byDay).some((m) => m >= 180)) unlocked.add('deep-focus');
-
-  const doneByDay = {};
-  for (const t of tasks) {
-    if (t.done && t.completedAt) {
-      const d = dayKey(new Date(t.completedAt));
-      doneByDay[d] = (doneByDay[d] || 0) + 1;
+// Longest run of consecutive days with at least one focus session.
+export function longestStreak() {
+  const days = [...new Set(getSessions().map((s) => s.day))].sort();
+  let best = 0, run = 0, prev = null;
+  for (const d of days) {
+    if (prev !== null) {
+      const next = new Date(`${prev}T12:00`);
+      next.setDate(next.getDate() + 1);
+      run = dayKey(next) === d ? run + 1 : 1;
+    } else {
+      run = 1;
     }
+    best = Math.max(best, run);
+    prev = d;
   }
-  if (Object.values(doneByDay).some((n) => n >= 10)) unlocked.add('task-crusher');
+  return best;
+}
 
-  if (currentStreak() >= 7) unlocked.add('week-streak');
+export const ACHIEVEMENT_TRACKS = [
+  {
+    id: 'sessions', icon: 'timer', title: 'Focus Sessions', unit: 'sessions',
+    thresholds: [1, 10, 25, 50, 100, 250, 500],
+    metric: () => getSessions().length,
+  },
+  {
+    id: 'hours', icon: 'schedule', title: 'Focus Hours', unit: 'hours',
+    thresholds: [1, 5, 15, 40, 100, 250, 600],
+    metric: () => Math.floor(getSessions().reduce((s, x) => s + x.minutes, 0) / 60),
+  },
+  {
+    id: 'streak', icon: 'local_fire_department', title: 'Best Streak', unit: 'days',
+    thresholds: [3, 7, 14, 30, 60, 120, 365],
+    metric: longestStreak,
+  },
+  {
+    id: 'tasks', icon: 'task_alt', title: 'Tasks Completed', unit: 'tasks',
+    thresholds: [5, 25, 75, 150, 300, 600, 1000],
+    metric: () => getTasks().filter((t) => t.done).length,
+  },
+  {
+    id: 'pages', icon: 'auto_stories', title: 'Pages Read', unit: 'pages',
+    thresholds: [50, 200, 500, 1000, 2500, 5000, 10000],
+    metric: () => getReadingLog().reduce((sum, r) => sum + (r.to - r.from), 0),
+  },
+  {
+    id: 'books', icon: 'collections_bookmark', title: 'Books Finished', unit: 'books',
+    thresholds: [1, 3, 7, 15, 30, 50, 100],
+    metric: () => finishedBooks().length,
+  },
+];
 
-  const finished = finishedBooks().length;
-  if (finished >= 1) unlocked.add('bookworm');
-  if (finished >= 3) unlocked.add('librarian');
+// → { track, value, level (0..7), tier (TIERS entry | null), next (threshold | null), progress (0..1 toward next) }
+export function trackStatus(track) {
+  const value = track.metric();
+  let level = 0;
+  while (level < track.thresholds.length && value >= track.thresholds[level]) level++;
+  const tier = level > 0 ? TIERS[level - 1] : null;
+  const next = level < track.thresholds.length ? track.thresholds[level] : null;
+  const prev = level > 0 ? track.thresholds[level - 1] : 0;
+  const progress = next === null ? 1 : Math.min(1, (value - prev) / (next - prev));
+  return { track, value, level, tier, next, progress };
+}
 
-  const pagesRead = getReadingLog().reduce((sum, r) => sum + (r.to - r.from), 0);
-  if (pagesRead >= 100) unlocked.add('page-turner');
-
-  for (const s of sessions) {
-    const h = new Date(s.startedAt).getHours();
-    if (h < 7) unlocked.add('early-bird');
-    if (h >= 22) unlocked.add('night-owl');
-  }
-  return unlocked;
+export function allTrackStatuses() {
+  return ACHIEVEMENT_TRACKS.map(trackStatus);
 }
 
 // ---------- lifetime totals (profile page) ----------

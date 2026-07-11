@@ -46,14 +46,14 @@ export function render() {
 
   return `
   ${subHeader('History')}
-  <main class="pt-24 pb-16 px-margin-mobile max-w-2xl mx-auto page-enter">
+  <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter stagger">
     ${sortedDays.length ? sortedDays.map((day) => `
     <section class="mb-stack-md">
       <h2 class="text-label-md uppercase tracking-wider text-secondary mb-2 px-1">${dayTitle(day)}</h2>
       <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md">
         ${days[day].sort((a, b) => b.at - a.at).map((e) => `
         <div class="flex items-center gap-4 py-4 border-b border-surface-container last:border-0">
-          ${icon(e.iconName, 'text-primary-container')}
+          ${icon(e.iconName, 'text-accent-soft')}
           <p class="text-body-md text-on-surface flex-grow">${esc(e.text)}</p>
           <span class="text-label-sm text-secondary flex-shrink-0">${e.sub}</span>
         </div>`).join('')}

@@ -7,7 +7,7 @@ export function render() {
   const books = finishedBooks();
   return `
   ${subHeader('Finished Shelf')}
-  <main class="pt-24 pb-16 px-margin-mobile max-w-2xl mx-auto page-enter">
+  <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
     <p class="text-body-md text-secondary mb-stack-md">${books.length} book${books.length === 1 ? '' : 's'} completed. Your trophy shelf.</p>
     <div class="flex flex-col gap-3">
       ${books.length ? books.map((b) => `
@@ -16,7 +16,7 @@ export function render() {
         <div class="flex flex-col min-w-0">
           <h3 class="text-body-lg font-semibold text-on-surface truncate">${esc(b.title)}</h3>
           <p class="text-body-sm text-secondary truncate">${esc(b.author)}</p>
-          <span class="text-label-sm text-primary-container mt-1">Finished ${b.finishedAt ? formatDate(b.finishedAt) : ''} · ${b.totalPages} pages</span>
+          <span class="text-label-sm text-accent-soft mt-1">Finished ${b.finishedAt ? formatDate(b.finishedAt) : ''} · ${b.totalPages} pages</span>
         </div>
       </button>`).join('')
       : emptyState('collections_bookmark', 'Nothing here yet', 'Books you mark as finished will appear on this shelf.')}

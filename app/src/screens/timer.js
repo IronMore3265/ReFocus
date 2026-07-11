@@ -25,8 +25,9 @@ export function render() {
   const s = getSettings();
   return `
   ${appHeader()}
-  <main class="min-h-screen flex flex-col items-center justify-center px-margin-mobile pt-20 pb-24 fade-in">
-    <div data-ring-wrap class="mb-stack-lg">
+  <main class="min-h-screen flex flex-col items-center justify-center px-margin-mobile pt-20 pb-24 stagger">
+    <div data-ring-wrap class="mb-stack-lg relative">
+      <div data-pulse class="absolute inset-6 rounded-full border-2 border-accent-soft opacity-20 pulse-ring pointer-events-none ${t.status === 'running' ? '' : 'hidden'}"></div>
       ${progressRing({ progress: phaseProgress(t), centerHtml: centerHtml(t) })}
     </div>
 
@@ -34,7 +35,7 @@ export function render() {
       <button data-action="reset" class="w-14 h-14 rounded-full border border-outline text-on-surface flex items-center justify-center active:scale-95 transition-transform">
         ${icon('refresh')}
       </button>
-      <button data-action="toggle" class="px-8 py-4 bg-primary-container text-on-primary rounded-full text-label-md flex items-center gap-2 active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
+      <button data-action="toggle" class="px-8 py-4 bg-accent text-on-primary rounded-full text-label-md flex items-center gap-2 active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
         ${mainBtnHtml(t)}
       </button>
       <button data-action="options" class="w-14 h-14 rounded-full border border-outline text-on-surface flex items-center justify-center active:scale-95 transition-transform">
@@ -91,6 +92,7 @@ export function mount(root) {
   const toggleBtn = root.querySelector('[data-action="toggle"]');
   const roundEl = root.querySelector('[data-round]');
 
+  const pulseEl = root.querySelector('[data-pulse]');
   const sync = () => {
     const t = getTimer();
     const s = getSettings();
@@ -99,6 +101,7 @@ export function mount(root) {
     toggleBtn.innerHTML = mainBtnHtml(t);
     roundEl.textContent = `${t.round}/${s.sessionsPerRound}`;
     setRingProgress(ringWrap, phaseProgress(t));
+    pulseEl.classList.toggle('hidden', t.status !== 'running');
   };
 
   root.querySelector('[data-action="toggle"]').addEventListener('click', () => {

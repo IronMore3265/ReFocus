@@ -86,12 +86,75 @@
   --spacing-stack-lg: 48px;
 }
 
+/* Section accent system — scoped per route via .accent-* on <body> or any wrapper.
+   Declared with @theme inline so utilities reference var(--accent) at the usage
+   site (a plain @theme token would resolve once at :root and ignore the scopes).
+   accent      = fills (buttons, FABs, checked boxes) with white text
+   accent-soft = text/stroke accent, brightens in dark mode
+   accent-tint = tinted container background */
+@theme inline {
+  --color-accent: var(--accent, #950606);
+  --color-accent-soft: var(--accent-soft, #950606);
+  --color-accent-tint: var(--accent-tint, #ffdad5);
+}
+
+/* ---------- Section accent palettes ---------- */
+:root, .accent-timer {
+  --accent: #950606;
+  --accent-soft: #950606;
+  --accent-tint: #ffdad5;
+}
+.accent-reading {
+  --accent: #1d43c8;
+  --accent-soft: #1d43c8;
+  --accent-tint: #dce1ff;
+}
+.accent-tasks {
+  --accent: #0b6e4f;
+  --accent-soft: #0b6e4f;
+  --accent-tint: #d7f0e4;
+}
+
+/* ---------- Dark theme ---------- */
+.dark {
+  --color-surface: #131315;
+  --color-surface-dim: #0d0d0f;
+  --color-surface-bright: #1c1c1f;
+  --color-surface-container-lowest: #1b1b1e;
+  --color-surface-container-low: #202024;
+  --color-surface-container: #26262a;
+  --color-surface-container-high: #2d2d31;
+  --color-surface-container-highest: #37373b;
+  --color-surface-variant: #3a3a3e;
+  --color-on-surface: #e7e5e4;
+  --color-on-surface-variant: #d8b8b2;
+  --color-secondary: #a8a6a5;
+  --color-secondary-container: #3a3938;
+  --color-on-secondary-container: #cfcecd;
+  --color-secondary-fixed-dim: #6d6b6a;
+  --color-outline: #a08c88;
+  --color-outline-variant: #4d403d;
+  --color-primary-container: #ff9d90;
+  --color-primary-fixed: #3c1210;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #4a1210;
+  --color-on-error-container: #ffdad6;
+  --color-background: #131315;
+  --color-on-background: #e7e5e4;
+}
+.dark, .dark .accent-timer { --accent: #c62f28; --accent-soft: #ff9d90; --accent-tint: #3c1210; }
+.dark .accent-reading { --accent: #4a63d0; --accent-soft: #a9b8ff; --accent-tint: #1a2450; }
+.dark .accent-tasks { --accent: #178a62; --accent-soft: #8ad9b8; --accent-tint: #0e2b21; }
+
 /* ---------- Base ---------- */
 html, body {
   font-family: var(--font-sans);
   background: var(--color-surface);
+  color: var(--color-on-surface);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .material-symbols-outlined {
@@ -113,7 +176,14 @@ html, body {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* ---------- Components (from Stitch mockups) ---------- */
+/* Fixed headers/nav include the safe area; pages pad past them */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pt-page { padding-top: calc(6.5rem + env(safe-area-inset-top)); }
+.pb-page { padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)); }
+.pb-page-sub { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+
+/* ---------- Components ---------- */
 .task-checkbox {
   appearance: none;
   width: 20px;
@@ -124,11 +194,12 @@ html, body {
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
 }
 .task-checkbox:checked {
-  background-color: #950606;
-  border-color: #950606;
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  animation: checkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .task-checkbox:checked::after {
   content: '';
@@ -141,58 +212,143 @@ html, body {
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+@keyframes checkPop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
 
 .timer-ring {
   transition: stroke-dashoffset 1s linear;
 }
 
+/* ---------- Animation library ---------- */
 .fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-  opacity: 0;
-  transform: translateY(10px);
+  animation: fadeUp 0.5s ease-out both;
 }
-@keyframes fadeIn {
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Staggered child entrances — put .stagger on a container */
+.stagger > * { animation: fadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.21s; }
+.stagger > *:nth-child(5) { animation-delay: 0.27s; }
+.stagger > *:nth-child(6) { animation-delay: 0.33s; }
+.stagger > *:nth-child(7) { animation-delay: 0.39s; }
+.stagger > *:nth-child(8) { animation-delay: 0.45s; }
 
 .pulse-ring {
   animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 @keyframes pulse-ring {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(149, 6, 6, 0.4); }
-  70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(149, 6, 6, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(149, 6, 6, 0); }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 40%, transparent); }
+  70% { transform: scale(1); box-shadow: 0 0 0 20px transparent; }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 transparent; }
 }
 
-/* Sub-page slide-in */
-.page-enter {
-  animation: pageEnter 0.25s ease-out forwards;
-}
+.page-enter { animation: pageEnter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes pageEnter {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(20px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Modal */
-.modal-backdrop {
-  animation: backdropIn 0.2s ease-out forwards;
-}
-@keyframes backdropIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.modal-sheet {
-  animation: sheetIn 0.25s ease-out forwards;
-}
+.modal-backdrop { animation: backdropIn 0.2s ease-out both; }
+@keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-sheet { animation: sheetIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes sheetIn {
-  from { transform: translateY(40px); opacity: 0; }
+  from { transform: translateY(48px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Pop for FABs and active nav icons */
+.pop-in { animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes popIn {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Horizontal progress bars grow in */
+.grow-x { transform-origin: left; animation: growX 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.15s; }
+@keyframes growX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Chart bars rise (set --rise-delay inline for stagger) */
+.rise { transform-origin: bottom; animation: riseY 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--rise-delay, 0s); }
+@keyframes riseY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* Session-complete celebration */
+.burst { position: relative; }
+.burst::before, .burst::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid var(--color-accent);
+  animation: burstRing 1.2s ease-out both;
+}
+.burst::after { animation-delay: 0.25s; }
+@keyframes burstRing {
+  from { transform: scale(0.8); opacity: 0.8; }
+  to { transform: scale(2.1); opacity: 0; }
+}
+
+/* Achievement medal shimmer */
+.shimmer { position: relative; overflow: hidden; }
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -80%;
+  width: 50%;
+  height: 220%;
+  transform: rotate(25deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: shimmerSweep 2.8s ease-in-out infinite;
+}
+@keyframes shimmerSweep {
+  0% { left: -80%; }
+  55%, 100% { left: 130%; }
+}
+
+/* Gentle float for onboarding illustrations */
+.float { animation: floaty 3.2s ease-in-out infinite; }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Onboarding: ring draws itself */
+.draw-ring { stroke-dasharray: 283; stroke-dashoffset: 283; animation: drawRing 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes drawRing { to { stroke-dashoffset: 60; } }
+
+/* Onboarding: dial hand sweeps */
+.sweep { transform-origin: 50px 52px; animation: sweepHand 6s linear infinite; }
+@keyframes sweepHand { to { transform: rotate(360deg); } }
+
+/* Onboarding: checklist items tick themselves in sequence */
+.self-check .tick { opacity: 0; animation: tickIn 0.4s ease-out forwards; }
+.self-check .row:nth-child(1) .tick { animation-delay: 0.6s; }
+.self-check .row:nth-child(2) .tick { animation-delay: 1.3s; }
+.self-check .row:nth-child(3) .tick { animation-delay: 2s; }
+@keyframes tickIn { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+
+/* Theme toggle knob + toggle switches slide smoothly */
+.toggle-knob { transition: left 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.toggle-track { transition: background-color 0.25s ease; }
 
 input[type='text'], input[type='number'], input[type='date'], input[type='time'], textarea, select {
   font-family: var(--font-sans);
 }
+.dark input[type='date'], .dark input[type='time'] { color-scheme: dark; }
 
-/* Safe areas (Android cutouts) */
-.pt-safe { padding-top: env(safe-area-inset-top); }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

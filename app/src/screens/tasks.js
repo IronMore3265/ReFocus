@@ -10,7 +10,7 @@ function taskRow(t) {
     <button data-nav="#/task/${t.id}" class="flex flex-col flex-grow text-left min-w-0 ${t.done ? 'opacity-60' : ''}">
       <span class="text-body-md text-on-surface leading-tight ${t.done ? 'line-through' : ''}">${esc(t.title)}</span>
       <span class="text-label-sm ${due.cls} mt-1 flex items-center gap-1">
-        ${t.priority === 'high' && !t.done ? icon('priority_high', 'text-[14px] text-primary-container') : ''}${due.text}
+        ${t.priority === 'high' && !t.done ? icon('priority_high', 'text-[14px] text-accent-soft') : ''}${due.text}
       </span>
     </button>
     ${icon('chevron_right', 'text-secondary-fixed-dim mt-1')}
@@ -20,9 +20,9 @@ function taskRow(t) {
 function section(title, iconName, tasks) {
   if (!tasks.length) return '';
   return `
-  <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md mb-gutter fade-in">
+  <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md mb-gutter">
     <div class="flex items-center gap-3 mb-2">
-      ${icon(iconName, 'text-primary-container')}
+      ${icon(iconName, 'text-accent-soft')}
       <h2 class="text-headline-md text-on-surface">${title}</h2>
     </div>
     ${tasks.map(taskRow).join('')}
@@ -47,7 +47,7 @@ export function render() {
 
   return `
   ${appHeader()}
-  <main class="pt-24 pb-28 px-margin-mobile max-w-2xl mx-auto">
+  <main class="pt-page pb-page px-margin-mobile max-w-2xl mx-auto stagger">
     <div class="mb-stack-md">
       <h1 class="text-headline-lg-mobile text-on-surface mb-unit">Tasks</h1>
       <p class="text-body-md text-secondary">Organize your focus for the day.</p>
