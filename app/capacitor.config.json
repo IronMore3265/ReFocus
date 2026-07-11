@@ -1,0 +1,14 @@
+{
+  "appId": "com.nfraiyan.focussuite",
+  "appName": "Focus Suite",
+  "webDir": "dist",
+  "backgroundColor": "#f9f9f9",
+  "android": {
+    "backgroundColor": "#f9f9f9"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#950606"
+    }
+  }
+}
