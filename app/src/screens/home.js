@@ -20,20 +20,20 @@ export function render() {
 
   return `
   ${appHeader()}
-  <main class="pt-24 pb-28 px-margin-mobile max-w-2xl mx-auto flex flex-col gap-gutter">
-    <section class="text-center mt-2 fade-in">
+  <main class="pt-page pb-page px-margin-mobile max-w-2xl mx-auto flex flex-col gap-gutter stagger">
+    <section class="text-center mt-2">
       <h1 class="text-headline-lg-mobile text-on-surface mb-unit">${esc(greeting())}</h1>
       <p class="text-body-lg text-secondary">Ready for another focused day.</p>
     </section>
 
-    <!-- Active session -->
-    <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md flex flex-col items-center fade-in">
+    <!-- Active session (timer red) -->
+    <div class="accent-timer bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md flex flex-col items-center">
       <div class="w-full flex justify-between items-center mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Active Session</span>
-        <button data-nav="#/timer" class="text-primary-container">${icon('more_horiz')}</button>
+        <button data-nav="#/timer" class="text-accent-soft">${icon('more_horiz')}</button>
       </div>
       <div data-ring-wrap class="relative">
-        ${running ? '<div class="absolute inset-2 rounded-full border-2 border-primary-container opacity-20 pulse-ring pointer-events-none"></div>' : ''}
+        ${running ? '<div class="absolute inset-2 rounded-full border-2 border-accent-soft opacity-20 pulse-ring pointer-events-none"></div>' : ''}
         ${progressRing({
           progress: phaseProgress(t), size: 224, stroke: 4,
           centerHtml: `
@@ -42,13 +42,13 @@ export function render() {
         })}
       </div>
       <div class="mt-stack-sm flex gap-4">
-        <button data-action="toggle" class="bg-primary-container text-on-primary px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">${running ? 'Pause' : 'Start'}</button>
+        <button data-action="toggle" class="bg-accent text-on-primary px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">${running ? 'Pause' : 'Start'}</button>
         <button data-action="skip" class="bg-transparent border border-on-surface text-on-surface px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform">Skip</button>
       </div>
     </div>
 
-    <!-- Currently reading -->
-    <button ${book ? `data-nav="#/book/${book.id}"` : 'data-nav="#/reading"'} class="text-left bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md active:bg-surface-bright transition-colors fade-in">
+    <!-- Currently reading (blue) -->
+    <button ${book ? `data-nav="#/book/${book.id}"` : 'data-nav="#/reading"'} class="accent-reading text-left bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md active:bg-surface-bright transition-colors">
       <div class="flex justify-between items-start mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Currently Reading</span>
         ${icon('open_in_new', 'text-secondary')}
@@ -61,7 +61,7 @@ export function render() {
           <p class="text-body-sm text-secondary mb-3 truncate">${esc(book.author)}</p>
           <div class="flex items-center gap-2">
             <div class="w-32 h-1 bg-surface-container-low rounded-full overflow-hidden">
-              <div class="h-full bg-primary-container" style="width:${bookPct}%"></div>
+              <div class="h-full bg-accent" style="width:${bookPct}%"></div>
             </div>
             <span class="text-label-sm text-secondary">${bookPct}%</span>
           </div>
@@ -69,8 +69,8 @@ export function render() {
       </div>` : `<p class="text-body-md text-secondary">No book in progress — add one to start tracking.</p>`}
     </button>
 
-    <!-- Next task -->
-    <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md fade-in">
+    <!-- Next task (green) -->
+    <div class="accent-tasks bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex justify-between items-start mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Next Task</span>
         <button data-nav="#/tasks" class="text-secondary">${icon('arrow_forward')}</button>
@@ -80,7 +80,7 @@ export function render() {
         <input data-task-toggle="${task.id}" class="task-checkbox mt-1" type="checkbox" />
         <button data-nav="#/task/${task.id}" class="flex flex-col text-left">
           <p class="text-body-md text-on-surface leading-snug">${esc(task.title)}</p>
-          <div class="flex items-center gap-1 mt-2 ${dueLabel(task).cls === 'text-error' ? 'text-error' : 'text-primary-container'}">
+          <div class="flex items-center gap-1 mt-2 ${dueLabel(task).cls === 'text-error' ? 'text-error' : 'text-accent-soft'}">
             ${icon('schedule', 'text-[16px]')}
             <span class="text-label-sm">${dueLabel(task).text}</span>
           </div>

@@ -1,4 +1,4 @@
-# Focus Suite
+# ReFocus
 
 A minimalist focus app for Android — Pomodoro timer, reading tracker, and tasks — built from the Stitch design in `stitch_minimalist_focus_suite/` ("Serene Monochrome" design system).
 

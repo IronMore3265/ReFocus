@@ -1,7 +1,8 @@
 import './style.css';
 import { getProfile } from './store.js';
 import { tickTimer, onTimerChange } from './engine.js';
-import { requestNotificationPermission } from './notify.js';
+import { initNotifications } from './notify.js';
+import { applyTheme } from './theme.js';
 import { icon, showSheet } from './ui.js';
 
 import * as home from './screens/home.js';
@@ -20,20 +21,21 @@ import * as shelf from './screens/shelf.js';
 import * as onboarding from './screens/onboarding.js';
 
 // ---------- routes ----------
+// `accent` scopes the section color profile (see style.css .accent-*)
 const routes = [
   { pattern: /^#\/home$/, screen: home },
-  { pattern: /^#\/timer$/, screen: timer },
-  { pattern: /^#\/reading$/, screen: reading },
-  { pattern: /^#\/tasks$/, screen: tasks },
+  { pattern: /^#\/timer$/, screen: timer, accent: 'timer' },
+  { pattern: /^#\/reading$/, screen: reading, accent: 'reading' },
+  { pattern: /^#\/tasks$/, screen: tasks, accent: 'tasks' },
   { pattern: /^#\/stats$/, screen: stats },
   { pattern: /^#\/settings$/, screen: settings },
   { pattern: /^#\/profile$/, screen: profile },
-  { pattern: /^#\/book\/(\w+)$/, screen: bookDetail },
-  { pattern: /^#\/task\/(\w+)$/, screen: taskDetail },
-  { pattern: /^#\/complete$/, screen: sessionComplete },
+  { pattern: /^#\/book\/(\w+)$/, screen: bookDetail, accent: 'reading' },
+  { pattern: /^#\/task\/(\w+)$/, screen: taskDetail, accent: 'tasks' },
+  { pattern: /^#\/complete$/, screen: sessionComplete, accent: 'timer' },
   { pattern: /^#\/history$/, screen: historyScreen },
   { pattern: /^#\/achievements$/, screen: achievements },
-  { pattern: /^#\/shelf$/, screen: shelf },
+  { pattern: /^#\/shelf$/, screen: shelf, accent: 'reading' },
   { pattern: /^#\/onboarding$/, screen: onboarding },
 ];
 
@@ -63,6 +65,8 @@ function render() {
 
   if (cleanup) { cleanup(); cleanup = null; }
   window.scrollTo(0, 0);
+  document.body.className =
+    `bg-surface text-on-surface antialiased${match.accent ? ` accent-${match.accent}` : ''}`;
   root.innerHTML = match.screen.render(...params);
   if (match.screen.mount) cleanup = match.screen.mount(root, ...params) || null;
 }
@@ -90,7 +94,7 @@ function openMenu() {
       <span class="text-body-md">${label}</span>
     </button>`;
   showSheet(`
-    <h2 class="text-headline-md text-on-surface mb-4">Focus Suite</h2>
+    <h2 class="text-headline-md text-on-surface mb-4">ReFocus</h2>
     ${item('#/stats', 'monitoring', 'Focus Dashboard')}
     ${item('#/history', 'calendar_month', 'History')}
     ${item('#/achievements', 'trophy', 'Achievements')}
@@ -122,5 +126,6 @@ import('@capacitor/app')
   .catch(() => { /* plugin absent on web — fine */ });
 
 window.addEventListener('hashchange', render);
-requestNotificationPermission();
+applyTheme();
+initNotifications();
 render();

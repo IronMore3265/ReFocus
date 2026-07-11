@@ -15,10 +15,10 @@ export function render() {
 
   return `
   ${subHeader('Profile')}
-  <main class="pt-24 pb-16 px-margin-mobile max-w-2xl mx-auto page-enter">
+  <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
 
     <div class="flex flex-col items-center mb-stack-lg">
-      <div class="w-24 h-24 rounded-full bg-primary-container flex items-center justify-center mb-4">
+      <div class="w-24 h-24 rounded-full bg-accent flex items-center justify-center mb-4">
         <span class="text-headline-lg text-on-primary font-bold">${esc(initial)}</span>
       </div>
       <input data-name value="${esc(p.name)}" placeholder="Your name"

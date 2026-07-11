@@ -11,7 +11,7 @@ import { coverHtml } from './reading.js';
 
 export function render(id) {
   const book = getBook(id);
-  if (!book) return `${subHeader('Book')}<main class="pt-24 px-margin-mobile">${emptyState('error', 'Book not found', 'It may have been deleted.')}</main>`;
+  if (!book) return `${subHeader('Book')}<main class="pt-page px-margin-mobile">${emptyState('error', 'Book not found', 'It may have been deleted.')}</main>`;
 
   const pct = book.totalPages ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
   const log = getReadingLog().filter((r) => r.bookId === id).sort((a, b) => b.at - a.at);
@@ -20,7 +20,7 @@ export function render(id) {
   ${subHeader(book.title, `
     <button data-action="edit" class="p-3 text-on-surface">${icon('edit')}</button>
     <button data-action="delete" class="p-3 text-error">${icon('delete')}</button>`)}
-  <main class="pt-24 pb-16 px-margin-mobile max-w-2xl mx-auto page-enter">
+  <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
 
     <div class="flex gap-gutter items-center mb-stack-md">
       ${coverHtml(book, 'w-24 h-36')}
@@ -28,7 +28,7 @@ export function render(id) {
         <h1 class="text-headline-md text-on-surface leading-tight mb-1">${esc(book.title)}</h1>
         <p class="text-body-sm text-secondary mb-3">${esc(book.author)}</p>
         ${book.finished
-          ? `<span class="inline-flex items-center gap-1 text-label-md text-primary-container bg-primary-fixed rounded-full px-3 py-1 self-start">${icon('check', 'text-[14px]')} Finished ${book.finishedAt ? formatDate(book.finishedAt) : ''}</span>`
+          ? `<span class="inline-flex items-center gap-1 text-label-md text-accent-soft bg-accent-tint rounded-full px-3 py-1 self-start">${icon('check', 'text-[14px]')} Finished ${book.finishedAt ? formatDate(book.finishedAt) : ''}</span>`
           : `<span class="text-body-sm text-secondary">Page ${book.currentPage} of ${book.totalPages}</span>`}
       </div>
     </div>
@@ -36,14 +36,14 @@ export function render(id) {
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md mb-stack-md">
       <div class="flex justify-between items-center mb-2">
         <span class="text-label-md uppercase tracking-wider text-secondary">Progress</span>
-        <span class="text-label-md text-primary-container">${pct}%</span>
+        <span class="text-label-md text-accent-soft">${pct}%</span>
       </div>
       ${progressBar(pct, 'mb-4')}
       ${book.finished ? `
       <button data-action="unfinish" class="w-full py-3 rounded-full border border-on-surface text-on-surface text-label-md">Move back to reading</button>
       ` : `
       <div class="flex gap-3">
-        <button data-action="update-page" class="flex-1 py-3 rounded-full bg-primary-container text-on-primary text-label-md active:scale-[0.98] transition-transform">Update Page</button>
+        <button data-action="update-page" class="flex-1 py-3 rounded-full bg-accent text-on-primary text-label-md active:scale-[0.98] transition-transform">Update Page</button>
         <button data-action="finish" class="flex-1 py-3 rounded-full border border-on-surface text-on-surface text-label-md active:scale-[0.98] transition-transform">Mark Finished</button>
       </div>`}
     </div>
@@ -51,7 +51,7 @@ export function render(id) {
     <section class="mb-stack-md">
       <div class="flex justify-between items-center mb-stack-sm">
         <h2 class="text-headline-md text-on-surface">Notes & Quotes</h2>
-        <button data-action="add-note" class="p-2 text-primary-container">${icon('add_circle')}</button>
+        <button data-action="add-note" class="p-2 text-accent-soft">${icon('add_circle')}</button>
       </div>
       <div class="flex flex-col gap-3">
         ${book.notes.length ? book.notes.slice().reverse().map((n) => `

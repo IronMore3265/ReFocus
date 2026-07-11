@@ -19,13 +19,13 @@ export function esc(s) {
 // ---------- top app bar for tab pages ----------
 export function appHeader() {
   return `
-  <header class="pt-safe fixed top-0 w-full z-40 bg-surface border-b border-surface-container">
+  <header class="pt-safe fixed top-0 w-full z-40 bg-surface border-b border-surface-container transition-colors">
     <div class="flex justify-between items-center h-16 px-margin-mobile">
-      <button data-nav="menu" class="p-2 rounded text-primary-container active:opacity-70 transition-opacity">
+      <button data-nav="menu" class="p-2 rounded text-accent-soft active:opacity-70 transition-opacity">
         ${icon('menu')}
       </button>
-      <div class="text-headline-md font-bold text-primary-container">${formatDate()}</div>
-      <button data-nav="#/profile" class="p-2 rounded text-primary-container active:opacity-70 transition-opacity">
+      <div class="text-headline-md font-bold text-accent-soft transition-colors">${formatDate()}</div>
+      <button data-nav="#/profile" class="p-2 rounded text-accent-soft active:opacity-70 transition-opacity">
         ${icon('account_circle')}
       </button>
     </div>
@@ -62,9 +62,9 @@ export function bottomNav(activeRoute) {
         const active = t.route === activeRoute;
         return `
         <button data-nav="${t.route}" class="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform duration-200 ${
-          active ? 'text-primary-container font-bold' : 'text-secondary'
+          active ? 'text-accent-soft font-bold' : 'text-secondary'
         }">
-          ${icon(t.iconName, 'mb-1', active)}
+          ${icon(t.iconName, `mb-1 ${active ? 'pop-in' : ''}`, active)}
           <span class="text-label-md ${active ? '' : 'font-normal'}">${t.label}</span>
         </button>`;
       }).join('')}
@@ -75,7 +75,7 @@ export function bottomNav(activeRoute) {
 // ---------- FAB ----------
 export function fab(action = 'add') {
   return `
-  <button data-action="${action}" class="fixed bottom-24 right-margin-mobile bg-primary-container text-on-primary w-14 h-14 rounded-2xl flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] active:scale-95 transition-transform z-40">
+  <button data-action="${action}" class="pop-in fixed bottom-24 right-margin-mobile bg-accent text-on-primary w-14 h-14 rounded-2xl flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] active:scale-95 transition-transform z-40" style="animation-delay:0.25s">
     ${icon('add')}
   </button>`;
 }
@@ -90,7 +90,7 @@ export function progressRing({ progress = 0, size = 288, stroke = 8, centerHtml 
   <div class="relative flex items-center justify-center ${extraClass}" style="width:${size}px;height:${size}px">
     <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 300 300">
       <circle class="stroke-surface-container" cx="150" cy="150" fill="none" r="${r}" stroke-linecap="round" stroke-width="${stroke}"></circle>
-      <circle data-ring class="stroke-primary-container timer-ring" cx="150" cy="150" fill="none" r="${r}"
+      <circle data-ring class="stroke-accent-soft timer-ring" cx="150" cy="150" fill="none" r="${r}"
         stroke-linecap="round" stroke-width="${stroke}"
         stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"></circle>
     </svg>
@@ -109,7 +109,7 @@ export function setRingProgress(container, progress) {
 export function progressBar(pct, extraClass = '') {
   return `
   <div class="w-full h-1 bg-surface-container-low rounded-full overflow-hidden ${extraClass}">
-    <div class="h-full bg-primary-container rounded-full" style="width:${Math.min(100, Math.max(0, pct))}%"></div>
+    <div class="grow-x h-full bg-accent-soft rounded-full" style="width:${Math.min(100, Math.max(0, pct))}%"></div>
   </div>`;
 }
 
@@ -150,7 +150,7 @@ export function confirmSheet({ title, message, confirmLabel = 'Delete', onConfir
     <p class="text-body-md text-secondary mb-6">${esc(message)}</p>
     <div class="flex gap-3">
       <button data-close class="flex-1 py-3 rounded-full border border-on-surface text-on-surface text-label-md">Cancel</button>
-      <button data-confirm class="flex-1 py-3 rounded-full bg-primary-container text-on-primary text-label-md">${esc(confirmLabel)}</button>
+      <button data-confirm class="flex-1 py-3 rounded-full bg-error text-on-error text-label-md">${esc(confirmLabel)}</button>
     </div>`);
   el.querySelector('[data-confirm]').addEventListener('click', () => {
     close();
@@ -168,8 +168,8 @@ export function field(label, inputHtml) {
 }
 
 export const inputCls =
-  'w-full px-4 py-3 rounded-lg border border-surface-container-highest bg-surface-container-lowest text-body-md text-on-surface focus:outline-none focus:border-primary-container';
+  'w-full px-4 py-3 rounded-lg border border-surface-container-highest bg-surface-container-lowest text-body-md text-on-surface focus:outline-none focus:border-accent-soft';
 
 export function primaryBtn(label, attrs = '') {
-  return `<button ${attrs} class="w-full py-4 rounded-full bg-primary-container text-on-primary text-label-md active:scale-[0.98] transition-transform">${esc(label)}</button>`;
+  return `<button ${attrs} class="w-full py-4 rounded-full bg-accent text-on-primary text-label-md active:scale-[0.98] transition-transform">${esc(label)}</button>`;
 }
