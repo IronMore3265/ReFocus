@@ -107,18 +107,18 @@ export function mount(root, id) {
             const isToday = dt.toDateString() === now.toDateString();
             const label = isToday ? 'Today' : dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
             const val = dt.toISOString().split('T')[0];
-            return \`<div class="wheel-item" data-val="\${val}">\${label}</div>\`;
+            return `<div class="wheel-item" data-val="${val}">${label}</div>`;
           }).join('')}
           <div class="wheel-pad"></div>
         </div>
         <div class="wheel-column" id="wheel-hour">
           <div class="wheel-pad"></div>
-          ${Array.from({length: 12}).map((_, i) => \`<div class="wheel-item" data-val="\${i === 0 ? 12 : i}">\${i === 0 ? 12 : i}</div>\`).join('')}
+          ${Array.from({length: 12}).map((_, i) => `<div class="wheel-item" data-val="${i === 0 ? 12 : i}">${i === 0 ? 12 : i}</div>`).join('')}
           <div class="wheel-pad"></div>
         </div>
         <div class="wheel-column" id="wheel-min">
           <div class="wheel-pad"></div>
-          ${Array.from({length: 60}).map((_, i) => \`<div class="wheel-item" data-val="\${i}">\${pad(i)}</div>\`).join('')}
+          ${Array.from({length: 60}).map((_, i) => `<div class="wheel-item" data-val="${i}">${pad(i)}</div>`).join('')}
           <div class="wheel-pad"></div>
         </div>
         <div class="wheel-column" id="wheel-ampm">
@@ -185,7 +185,7 @@ export function mount(root, id) {
       if(ap === 'PM' && hour < 12) hour += 12;
       if(ap === 'AM' && hour === 12) hour = 0;
       
-      const finalDate = new Date(\`\${dateStr}T\${pad(hour)}:\${pad(min)}:00\`);
+      const finalDate = new Date(`${dateStr}T${pad(hour)}:${pad(min)}:00`);
       updateTask(id, { due: finalDate.toISOString() });
       document.querySelector('.modal-backdrop').click();
       rerender();
