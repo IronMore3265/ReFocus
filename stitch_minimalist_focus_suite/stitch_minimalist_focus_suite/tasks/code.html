@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>To-Do List</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#5a403d",
+                        "on-surface": "#1a1c1c",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "primary": "#6c0002",
+                        "surface": "#f9f9f9",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#b7c4ff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-tertiary-fixed": "#001551",
+                        "background": "#f9f9f9",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-background": "#1a1c1c",
+                        "primary-fixed": "#ffdad5",
+                        "surface-variant": "#e2e2e2",
+                        "surface-bright": "#f9f9f9",
+                        "tertiary-fixed": "#dce1ff",
+                        "surface-dim": "#dadada",
+                        "outline": "#8f706b",
+                        "on-primary-container": "#ff9d90",
+                        "surface-container": "#eeeeee",
+                        "tertiary": "#002884",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#410001",
+                        "primary-container": "#950606",
+                        "surface-tint": "#b6241b",
+                        "on-tertiary-fixed-variant": "#0039b3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#003bb7",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-secondary-container": "#636262",
+                        "secondary-container": "#e2dfde",
+                        "on-secondary-fixed-variant": "#474746",
+                        "secondary": "#5f5e5e",
+                        "inverse-surface": "#2f3131",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#a2b4ff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#ffb4a9",
+                        "primary-fixed-dim": "#ffb4a9",
+                        "outline-variant": "#e3beb9",
+                        "on-primary-fixed-variant": "#920305"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1200px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "64px",
+                        "stack-lg": "48px",
+                        "stack-md": "24px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "stack-sm": "12px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Manrope", "sans-serif"],
+                        "headline-lg-mobile": ["Manrope", "sans-serif"],
+                        "body-lg": ["Manrope", "sans-serif"],
+                        "body-sm": ["Manrope", "sans-serif"],
+                        "label-md": ["Manrope", "sans-serif"],
+                        "headline-md": ["Manrope", "sans-serif"],
+                        "body-md": ["Manrope", "sans-serif"],
+                        "headline-lg": ["Manrope", "sans-serif"],
+                        "headline-xl": ["Manrope", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Checkbox */
+        .task-checkbox:checked {
+            background-color: #950606;
+            border-color: #950606;
+        }
+        .task-checkbox:focus {
+            --tw-ring-color: #950606;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-40 bg-surface dark:bg-surface-container-lowest border-b border-surface-container dark:border-surface-variant flex justify-between items-center h-16 px-margin-mobile md:px-margin-desktop">
+<div class="flex items-center cursor-pointer active:opacity-80 transition-opacity text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</div>
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed text-center absolute left-1/2 -translate-x-1/2">
+            October 24, 2023
+        </div>
+<div class="flex items-center cursor-pointer active:opacity-80 transition-opacity text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-margin-mobile md:px-margin-desktop max-w-[1200px] mx-auto md:pt-32">
+<div class="mb-stack-lg">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg mb-unit text-on-surface">Tasks</h1>
+<p class="font-body-md text-body-md text-secondary">Organize your focus for the day.</p>
+</div>
+<!-- Bento Grid for Tasks -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Today Section -->
+<section class="bg-surface-container-lowest border border-surface-variant rounded-xl p-stack-md flex flex-col gap-stack-sm h-full">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">today</span>
+                    Today
+                </h2>
+<div class="flex flex-col gap-0 border-t border-surface-container">
+<!-- Task Item -->
+<label class="flex items-start gap-4 py-4 border-b border-surface-container cursor-pointer hover:bg-surface-bright transition-colors group">
+<div class="flex-shrink-0 pt-1">
+<input class="task-checkbox h-5 w-5 rounded border-outline text-primary-container focus:ring-primary-container focus:ring-offset-surface-container-lowest transition-all cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-col flex-grow">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary-container transition-colors block leading-tight">Review quarterly design system updates</span>
+<span class="font-label-sm text-label-sm text-secondary mt-1 block">Due 2:00 PM</span>
+</div>
+<span class="material-symbols-outlined text-secondary-fixed-dim group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100">more_vert</span>
+</label>
+<!-- Task Item -->
+<label class="flex items-start gap-4 py-4 border-b border-surface-container cursor-pointer hover:bg-surface-bright transition-colors group">
+<div class="flex-shrink-0 pt-1">
+<input checked="" class="task-checkbox h-5 w-5 rounded border-outline text-primary-container focus:ring-primary-container focus:ring-offset-surface-container-lowest transition-all cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-col flex-grow opacity-60 line-through">
+<span class="font-body-md text-body-md text-on-surface block leading-tight">Sync with engineering on fluid typography</span>
+<span class="font-label-sm text-label-sm text-secondary mt-1 block">Completed</span>
+</div>
+</label>
+<!-- Task Item -->
+<label class="flex items-start gap-4 py-4 border-b border-surface-container cursor-pointer hover:bg-surface-bright transition-colors group">
+<div class="flex-shrink-0 pt-1">
+<input class="task-checkbox h-5 w-5 rounded border-outline text-primary-container focus:ring-primary-container focus:ring-offset-surface-container-lowest transition-all cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-col flex-grow">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary-container transition-colors block leading-tight">Draft interaction guidelines for FAB</span>
+<span class="font-label-sm text-label-sm text-error mt-1 block">Overdue</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Upcoming Section -->
+<section class="bg-surface-container-lowest border border-surface-variant rounded-xl p-stack-md flex flex-col gap-stack-sm h-full">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">calendar_month</span>
+                    Upcoming
+                </h2>
+<div class="flex flex-col gap-0 border-t border-surface-container">
+<!-- Task Item -->
+<label class="flex items-start gap-4 py-4 border-b border-surface-container cursor-pointer hover:bg-surface-bright transition-colors group">
+<div class="flex-shrink-0 pt-1">
+<input class="task-checkbox h-5 w-5 rounded border-outline text-primary-container focus:ring-primary-container focus:ring-offset-surface-container-lowest transition-all cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-col flex-grow">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary-container transition-colors block leading-tight">Finalize color palette naming conventions</span>
+<span class="font-label-sm text-label-sm text-secondary mt-1 block">Tomorrow</span>
+</div>
+</label>
+<!-- Task Item -->
+<label class="flex items-start gap-4 py-4 border-b border-surface-container cursor-pointer hover:bg-surface-bright transition-colors group">
+<div class="flex-shrink-0 pt-1">
+<input class="task-checkbox h-5 w-5 rounded border-outline text-primary-container focus:ring-primary-container focus:ring-offset-surface-container-lowest transition-all cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-col flex-grow">
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary-container transition-colors block leading-tight">Prepare assets for Q4 marketing campaign</span>
+<span class="font-label-sm text-label-sm text-secondary mt-1 block">Oct 26</span>
+</div>
+</label>
+</div>
+</section>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-margin-mobile md:bottom-margin-desktop md:right-margin-desktop bg-primary-container text-on-primary w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] hover:bg-primary transition-colors active:scale-95 z-50">
+<span class="material-symbols-outlined">add</span>
+</button>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-4 bg-surface dark:bg-surface-container-lowest border-t border-surface-container dark:border-surface-variant">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant transition-colors active:scale-95 duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1">timer</span>
+<span class="font-label-sm text-label-sm">Timer</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:text-on-surface dark:hover:text-on-surface-variant transition-colors active:scale-95 duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined mb-1">book_2</span>
+<span class="font-label-sm text-label-sm">Reading</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold hover:text-on-surface dark:hover:text-on-surface-variant transition-colors active:scale-95 duration-200 w-full h-full" href="#">
+<span class="material-symbols-outlined fill mb-1">checklist</span>
+<span class="font-label-sm text-label-sm">Tasks</span>
+</a>
+</nav>
+</body></html>
