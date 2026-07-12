@@ -5,6 +5,11 @@
 
 const GOODREADS_ACTOR = 'thescrapelab~Apify-Goodreads-Scraper';
 
+// Google Books key — raises the free quota for cover/synopsis lookups. Baked
+// into the bundle (not surfaced anywhere in the UI, unlike the user-supplied
+// Apify token in Settings); it only unlocks read-only volume search.
+const GOOGLE_BOOKS_KEY = 'AIzaSyA5-0m9LR17wEPToidsbXpECtA6M4lZ28Q';
+
 // Dedupe key: lowercase alphanumerics only, but keep Bengali script so
 // Bangla titles don't all collapse to the same empty key.
 function dedupeKey(b) {
@@ -17,7 +22,7 @@ function pick(...vals) {
 }
 
 async function searchGoogle(query) {
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books`;
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books&key=${GOOGLE_BOOKS_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Google Books HTTP ${res.status}`);
   const data = await res.json();

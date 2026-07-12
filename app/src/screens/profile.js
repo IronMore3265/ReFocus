@@ -1,6 +1,6 @@
 // Profile — name + lifetime totals.
 import { getProfile, setProfile, lifetimeStats } from '../store.js';
-import { subHeader, icon, esc, inputCls, showSheet, rerender } from '../ui.js';
+import { subHeader, esc, inputCls, showSheet, rerender } from '../ui.js';
 
 export function render() {
   const p = getProfile();
@@ -16,25 +16,20 @@ export function render() {
       <div class="text-label-sm text-secondary uppercase mt-1">${label}</div>
     </div>`;
 
+  const editBtn = `
+    <button data-action="edit-profile" class="ml-auto px-4 py-2 rounded-full border border-on-surface text-on-surface text-label-md active:scale-[0.98] transition-transform">
+      Edit
+    </button>`;
+
   return `
-  ${subHeader('Profile')}
+  ${subHeader('Profile', editBtn)}
   <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
 
     <div class="flex flex-col items-center mb-stack-lg">
-      <button data-action="change-pic" class="w-24 h-24 rounded-full bg-accent flex items-center justify-center mb-4 relative overflow-hidden group">
+      <div class="w-24 h-24 rounded-full bg-accent flex items-center justify-center mb-4 overflow-hidden">
         ${avatarHtml}
-        <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          ${icon('edit', 'text-white text-[16px]')}
-        </div>
-      </button>
-      <div class="flex items-center gap-1 max-w-xs">
-        <input data-name value="${esc(p.name)}" placeholder="Your name"
-          class="${inputCls} !bg-transparent !border-transparent text-center !text-2xl font-semibold focus:!border-surface-container-highest" />
-        <button data-action="edit-name" aria-label="Edit name"
-          class="shrink-0 p-2 rounded-full text-secondary active:opacity-70 transition-opacity">
-          ${icon('edit', 'text-[16px]')}
-        </button>
       </div>
+      <p class="text-2xl font-semibold text-on-surface text-center max-w-xs truncate">${esc(p.name) || 'Your name'}</p>
     </div>
 
     <h2 class="text-label-md uppercase tracking-wider text-secondary mb-3 px-1">Lifetime</h2>
@@ -73,32 +68,30 @@ async function inlineAvatar(url) {
 }
 
 export function mount(root) {
-  const nameInput = root.querySelector('[data-name]');
-  nameInput.addEventListener('change', (e) => {
-    setProfile({ name: e.target.value.trim() });
-    rerender(); // refresh the app-bar avatar/initial straight away
-  });
-  root.querySelector('[data-action="edit-name"]').addEventListener('click', () => {
-    nameInput.focus();
-    nameInput.select();
-  });
-
-  root.querySelector('[data-action="change-pic"]').addEventListener('click', () => {
+  root.querySelector('[data-action="edit-profile"]').addEventListener('click', () => {
+    const p = getProfile();
     const { el, close } = showSheet(`
-      <h2 class="text-headline-md text-on-surface mb-4 px-2">Choose Avatar</h2>
-      <div class="grid grid-cols-4 gap-4 pb-8 px-2" data-avatar-grid>
+      <h2 class="text-headline-md text-on-surface mb-4 px-2">Edit Profile</h2>
+      <input data-edit-name value="${esc(p.name)}" placeholder="Your name"
+        class="${inputCls} mb-4" />
+      <div class="grid grid-cols-4 gap-4 pb-4 px-2" data-avatar-grid>
         ${AVATAR_SEEDS.map((s) => `
         <button data-seed="${s}" class="w-16 h-16 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors p-2 active:scale-95">
           <img src="${avatarUrl(s)}" alt="" class="w-full h-full" />
         </button>`).join('')}
       </div>`);
 
+    const nameInput = el.querySelector('[data-edit-name]');
     el.querySelector('[data-avatar-grid]').addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-seed]');
       if (!btn) return;
       const picture = await inlineAvatar(avatarUrl(btn.getAttribute('data-seed')));
-      setProfile({ picture });
+      setProfile({ name: nameInput.value.trim(), picture });
       close();
+      rerender();
+    });
+    nameInput.addEventListener('change', () => {
+      setProfile({ name: nameInput.value.trim() });
       rerender();
     });
   });

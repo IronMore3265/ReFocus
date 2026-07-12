@@ -336,32 +336,32 @@ export function longestStreak() {
 export const ACHIEVEMENT_TRACKS = [
   {
     id: 'sessions', icon: 'timer', title: 'Focus Sessions', unit: 'sessions',
-    thresholds: [1, 10, 25, 50, 100, 250, 500],
+    thresholds: [5, 25, 60, 120, 250, 500, 1000],
     metric: () => getSessions().length,
   },
   {
     id: 'hours', icon: 'schedule', title: 'Focus Hours', unit: 'hours',
-    thresholds: [1, 5, 15, 40, 100, 250, 600],
+    thresholds: [3, 15, 40, 100, 250, 600, 1200],
     metric: () => Math.floor(getSessions().reduce((s, x) => s + x.minutes, 0) / 60),
   },
   {
     id: 'streak', icon: 'local_fire_department', title: 'Best Streak', unit: 'days',
-    thresholds: [3, 7, 14, 30, 60, 120, 365],
+    thresholds: [5, 14, 30, 60, 120, 250, 500],
     metric: longestStreak,
   },
   {
     id: 'tasks', icon: 'task_alt', title: 'Tasks Completed', unit: 'tasks',
-    thresholds: [5, 25, 75, 150, 300, 600, 1000],
+    thresholds: [15, 60, 150, 300, 600, 1200, 2000],
     metric: () => getTasks().filter((t) => t.done).length,
   },
   {
     id: 'pages', icon: 'auto_stories', title: 'Pages Read', unit: 'pages',
-    thresholds: [50, 200, 500, 1000, 2500, 5000, 10000],
+    thresholds: [150, 500, 1200, 2500, 5000, 10000, 20000],
     metric: () => getReadingLog().reduce((sum, r) => sum + (r.to - r.from), 0),
   },
   {
     id: 'books', icon: 'collections_bookmark', title: 'Books Finished', unit: 'books',
-    thresholds: [1, 3, 7, 15, 30, 50, 100],
+    thresholds: [3, 8, 15, 30, 60, 100, 200],
     metric: () => finishedBooks().length,
   },
 ];
