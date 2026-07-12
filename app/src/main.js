@@ -1,7 +1,8 @@
 import './style.css';
 import { getProfile } from './store.js';
-import { tickTimer, onTimerChange } from './engine.js';
+import { tickTimer, onTimerChange, syncFromNative } from './engine.js';
 import { initNotifications } from './notify.js';
+import { stopNativeAlert } from './native/timer-service.js';
 import { initCelebrations } from './celebrate.js';
 import { applyTheme } from './theme.js';
 import { icon, showSheet, avatarEl, closeTopSheet } from './ui.js';
@@ -129,8 +130,14 @@ function openMenu() {
 
 // ---------- timer heartbeat ----------
 setInterval(tickTimer, 1000);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) tickTimer();
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) return;
+  // While we were away the notification's buttons may have driven the timer, and
+  // an ended session may still be ringing. Reconcile before the tick, or it would
+  // act on a stale state.
+  await syncFromNative();
+  stopNativeAlert();
+  tickTimer();
 });
 
 onTimerChange((event) => {
@@ -157,3 +164,6 @@ applyTheme();
 initNotifications();
 initCelebrations();
 render();
+// Cold start after the notification drove the timer (or the activity was killed
+// under it): adopt the service's state before the first tick acts on a stale one.
+syncFromNative().then(tickTimer);

@@ -1,29 +1,19 @@
-// Notification + feedback glue. Uses Capacitor LocalNotifications on device;
-// degrades gracefully in the browser.
+// Completion feedback. On device this is all handled natively by TimerService —
+// it holds an exact alarm, so it fires on time even with the app closed, and it
+// loops the chosen ringtone until dismissed. What is left here is the browser
+// fallback (a synthesized chime) plus the notification permission prompt.
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { getSettings, getCustomSound } from './store.js';
+import { getSettings } from './store.js';
 
 const isNative = Capacitor.isNativePlatform();
-const TIMER_NOTIF_ID = 42;
-const CHANNEL_ID = 'timer-alerts';
 
 export async function initNotifications() {
   try {
     if (isNative) {
+      // TimerService creates its own channels; this is only about the Android 13+
+      // POST_NOTIFICATIONS grant, without which none of them can show.
       await LocalNotifications.requestPermissions();
-      // Android 8+: sound & vibration are channel properties — without a
-      // high-importance channel the alert arrives silently.
-      await LocalNotifications.createChannel({
-        id: CHANNEL_ID,
-        name: 'Timer alerts',
-        description: 'Fires when a focus session or break ends',
-        importance: 5,
-        visibility: 1,
-        vibration: true,
-        lights: true,
-        lightColor: '#c0392c',
-      });
     } else if ('Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission();
     }
@@ -32,39 +22,8 @@ export async function initNotifications() {
   }
 }
 
-// Schedule the "session finished" alert for a running phase.
-export async function scheduleEndNotification(phase, endAt) {
-  const title = phase === 'focus' ? 'Focus session complete' : 'Break is over';
-  const body = phase === 'focus'
-    ? 'Well done. Time for a break.'
-    : 'Ready for the next focus session?';
-  try {
-    if (isNative) {
-      await LocalNotifications.schedule({
-        notifications: [{
-          id: TIMER_NOTIF_ID,
-          title,
-          body,
-          channelId: CHANNEL_ID,
-          schedule: { at: new Date(endAt), allowWhileIdle: true },
-        }],
-      });
-    }
-  } catch {
-    // notifications unavailable — timer still works in-app
-  }
-}
-
-export async function cancelEndNotification() {
-  try {
-    if (isNative) {
-      await LocalNotifications.cancel({ notifications: [{ id: TIMER_NOTIF_ID }] });
-    }
-  } catch { /* ignore */ }
-}
-
 // Default completion chime (three ascending sine notes)
-function playChime() {
+export function playChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const now = ctx.currentTime;
@@ -83,25 +42,13 @@ function playChime() {
   } catch { /* audio unavailable */ }
 }
 
-// Play whatever completion sound is configured (custom file or default chime).
-export function playCompletionSound() {
-  const custom = getCustomSound();
-  if (custom?.dataUrl) {
-    try {
-      const audio = new Audio(custom.dataUrl);
-      audio.volume = 0.9;
-      audio.play().catch(playChime);
-      return;
-    } catch { /* fall through to chime */ }
-  }
-  playChime();
-}
-
-// In-app completion feedback (fires when the app is open at the moment of completion)
+// Fires from tickTimer when a phase ends. On device the service has already rung
+// (and is still ringing) by the time we get here — doubling up would be a mess.
 export function completionFeedback() {
+  if (isNative) return;
   const settings = getSettings();
   if (settings.vibration && navigator.vibrate) {
     navigator.vibrate([300, 120, 300, 120, 500]);
   }
-  if (settings.sound) playCompletionSound();
+  if (settings.sound) playChime();
 }

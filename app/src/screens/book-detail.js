@@ -8,6 +8,7 @@ import {
   field, inputCls, primaryBtn, emptyState, rerender,
 } from '../ui.js';
 import { coverHtml } from './reading.js';
+import { coverFromFile } from '../api/books.js';
 
 export function render(id) {
   const book = getBook(id);
@@ -23,7 +24,12 @@ export function render(id) {
   <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
 
     <div class="flex gap-gutter items-center mb-stack-md">
-      ${coverHtml(book, 'w-24 h-36')}
+      <button data-action="edit-cover" class="relative flex-shrink-0 rounded active:scale-[0.98] transition-transform" aria-label="Change cover">
+        ${coverHtml(book, 'w-24 h-36')}
+        <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accent text-on-primary flex items-center justify-center border-2 border-surface">
+          ${icon('photo_camera', 'text-[14px]')}
+        </span>
+      </button>
       <div class="flex flex-col min-w-0">
         <h1 class="text-headline-md text-on-surface leading-tight mb-1">${esc(book.title)}</h1>
         <p class="text-body-sm text-secondary mb-3">${esc(book.author)}</p>
@@ -124,6 +130,40 @@ export function mount(root, id) {
       synopsisBtn.textContent = clamped ? 'Read more' : 'Show less';
     });
   }
+
+  root.querySelector('[data-action="edit-cover"]').addEventListener('click', () => {
+    const { el, close } = showSheet(`
+      <h2 class="text-headline-md text-on-surface mb-4">Book cover</h2>
+      <div class="flex justify-center mb-stack-md">${coverHtml(book, 'w-28 h-42')}</div>
+      <input data-file type="file" accept="image/*" class="hidden" />
+      ${primaryBtn('Choose image', 'data-action="choose"')}
+      <button data-action="remove" class="w-full py-3 mt-2 text-label-md text-error ${book.cover ? '' : 'hidden'}">Remove cover</button>
+      <p data-cover-status class="text-body-sm text-secondary text-center mt-2 hidden"></p>`);
+
+    const fileInput = el.querySelector('[data-file]');
+    const statusEl = el.querySelector('[data-cover-status]');
+    el.querySelector('[data-action="choose"]').addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      statusEl.textContent = 'Resizing…';
+      statusEl.classList.remove('hidden');
+      try {
+        updateBook(id, { cover: await coverFromFile(file) });
+        close();
+        rerender();
+      } catch (err) {
+        statusEl.textContent = err.message || 'Could not use that image.';
+      }
+    });
+
+    el.querySelector('[data-action="remove"]').addEventListener('click', () => {
+      updateBook(id, { cover: null });
+      close();
+      rerender();
+    });
+  });
 
   root.querySelector('[data-action="edit"]').addEventListener('click', () => {
     const { el, close } = showSheet(`

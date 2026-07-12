@@ -1,9 +1,13 @@
 // Pomodoro state machine. State derives from a persisted end-timestamp,
 // so it survives app switches, reloads, and the webview being backgrounded.
 import { getSettings, logSession } from './store.js';
-import { scheduleEndNotification, cancelEndNotification, completionFeedback } from './notify.js';
+import { completionFeedback } from './notify.js';
+import { syncNativeTimer, getNativeTimer, onNativeTimerEvent } from './native/timer-service.js';
 
 const KEY = 'fs.timer';
+// The last `rev` we took from the service. It only moves when a notification
+// button changed the timer, which is our cue to adopt the service's copy.
+const REV_KEY = 'fs.timerRev';
 
 const listeners = new Set();
 export function onTimerChange(cb) {
@@ -38,6 +42,10 @@ export function getTimer() {
 
 function setTimer(state) {
   localStorage.setItem(KEY, JSON.stringify(state));
+  // Single choke point for every mutation — so the notification can never drift
+  // from the engine. The service carries `rev` forward untouched on a sync, so
+  // pushing state we just adopted from it can't loop back at us.
+  syncNativeTimer(state, getSettings());
   emit({ type: 'change', state });
   return state;
 }
@@ -62,20 +70,17 @@ export function startTimer() {
   if (t.status === 'running') return t;
   const endAt = Date.now() + remainingMs(t);
   const startedAt = t.startedAt || Date.now();
-  scheduleEndNotification(t.phase, endAt);
   return setTimer({ ...t, status: 'running', endAt, startedAt });
 }
 
 export function pauseTimer() {
   const t = getTimer();
   if (t.status !== 'running') return t;
-  cancelEndNotification();
   return setTimer({ ...t, status: 'paused', remainingMs: remainingMs(t), endAt: null });
 }
 
 export function resetTimer() {
   const t = getTimer();
-  cancelEndNotification();
   return setTimer({
     ...t, status: 'idle', endAt: null, startedAt: null,
     remainingMs: phaseDurationMs(t.phase),
@@ -85,7 +90,6 @@ export function resetTimer() {
 // Skip the current phase without logging it.
 export function skipPhase() {
   const t = getTimer();
-  cancelEndNotification();
   const nextPhase = t.phase === 'focus' ? 'break' : 'focus';
   return setTimer({
     ...t, phase: nextPhase, status: 'idle', endAt: null, startedAt: null,
@@ -129,6 +133,41 @@ export function tickTimer() {
     emit({ type: 'break-complete', state: next });
   }
 }
+
+// ---------- the notification's controls ----------
+
+// Take over the service's copy of the state after a notification button changed
+// it. `rev` only moves on a button press, so an unchanged rev means we already
+// agree and there is nothing to adopt.
+function adoptNativeState(n) {
+  if (!n || Number(n.rev) === Number(localStorage.getItem(REV_KEY) || 0)) return;
+  localStorage.setItem(REV_KEY, String(n.rev));
+  const t = getTimer();
+  const endAt = n.endAt || null;
+  setTimer({
+    ...t,
+    phase: n.phase,
+    status: n.status,
+    endAt,
+    remainingMs: n.remainingMs,
+    round: n.round,
+    // Restart from the notification begins a fresh phase, so the session we log
+    // later has to date from this run, not the one the user restarted out of.
+    startedAt: n.status === 'idle' ? null
+      : (t.startedAt || (endAt ? endAt - phaseDurationMs(n.phase) : null)),
+  });
+}
+
+// Reconcile on resume: the app may have been frozen while the notification was
+// driving the timer.
+export async function syncFromNative() {
+  adoptNativeState(await getNativeTimer());
+}
+
+onNativeTimerEvent('action', adoptNativeState);
+// The service's alarm is what actually detects the phase ending on device; hand
+// it straight to the tick so the session gets logged and the screen advances.
+onNativeTimerEvent('complete', () => tickTimer());
 
 // After settings change, refresh an idle timer's duration display.
 export function refreshIdleTimer() {
