@@ -98,21 +98,11 @@
   --color-accent-tint: var(--accent-tint, #fadfd9);
 }
 
-/* ---------- Section accent palettes — three shades of the brand red ---------- */
-:root, .accent-timer {
+/* ---------- Section accent — one shared brand red across timer/reading/tasks ---------- */
+:root, .accent-timer, .accent-reading, .accent-tasks {
   --accent: #c0392c;
   --accent-soft: #a82d24;
   --accent-tint: #fadfd9;
-}
-.accent-reading {
-  --accent: #780000;
-  --accent-soft: #8c1a14;
-  --accent-tint: #efdbd5;
-}
-.accent-tasks {
-  --accent: #9d4c3d;
-  --accent-soft: #8a3d2f;
-  --accent-tint: #f3e0d6;
 }
 
 /* ---------- Task priority — the ramp runs light → deep as priority rises.
@@ -158,9 +148,7 @@
   --color-background: #1c0f0e;
   --color-on-background: #f2e3d0;
 }
-.dark, .dark .accent-timer { --accent: #d84339; --accent-soft: #ff9d90; --accent-tint: #3c1210; }
-.dark .accent-reading { --accent: #b22a20; --accent-soft: #ffb4a9; --accent-tint: #451312; }
-.dark .accent-tasks { --accent: #b05a48; --accent-soft: #f0ac96; --accent-tint: #40241d; }
+.dark, .dark .accent-timer, .dark .accent-reading, .dark .accent-tasks { --accent: #d84339; --accent-soft: #ff9d90; --accent-tint: #3c1210; }
 /* Dark inverts the ramp's lightness so it still reads as rising intensity. */
 .dark {
   --prio-low-fill: #7d4a40;    --prio-low-ink: #e0ab9c;    --prio-low-on: #fff5f0;

@@ -11,8 +11,7 @@ export function medal(tier, size = 'w-14 h-14', iconName = null, iconCls = 'text
     </div>`;
   }
   return `
-  <div class="${size} shimmer rounded-full flex items-center justify-center"
-    style="background:linear-gradient(145deg, ${tier.color}, color-mix(in srgb, ${tier.color} 55%, #000)); box-shadow:0 4px 14px color-mix(in srgb, ${tier.color} 45%, transparent)">
+  <div class="${size} rounded-full flex items-center justify-center" style="background:${tier.color}">
     ${icon(iconName || 'military_tech', `text-white ${iconCls}`)}
   </div>`;
 }
@@ -31,10 +30,10 @@ export function render() {
     </div>
 
     <!-- Tier ladder legend -->
-    <div class="flex items-center bg-surface-container-lowest border border-surface-container-high rounded-xl px-4 py-3 mb-stack-md overflow-x-auto gap-4">
+    <div class="grid grid-cols-4 bg-surface-container-lowest border border-surface-container-high rounded-xl px-2 py-3 mb-stack-md gap-y-3">
       ${TIERS.map((t) => `
-      <div class="flex flex-col items-center gap-1 shrink-0 min-w-[48px] flex-1">
-        <span class="material-symbols-outlined icon-fill text-[20px]" style="color:${t.color}">trophy</span>
+      <div class="flex flex-col items-center gap-1">
+        <span class="material-symbols-outlined icon-fill text-[28px]" style="color:${t.color}">trophy</span>
         <span class="text-label-sm text-secondary">${t.name}</span>
       </div>`).join('')}
     </div>

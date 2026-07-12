@@ -102,17 +102,17 @@ export function render() {
         Nothing is sent to a server. Export a CSV backup to keep your progress safe or move it to another device.
       </p>
       <button data-action="export" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
-        ${icon('download', 'text-secondary')}
+        ${icon('upload', 'text-secondary')}
         <span class="text-body-md">Export data (CSV)</span>
       </button>
       <button data-action="import" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
-        ${icon('upload', 'text-secondary')}
+        ${icon('download', 'text-secondary')}
         <span class="text-body-md">Import data (CSV)</span>
       </button>
       <input data-import-file type="file" accept=".csv,text/csv,text/plain" class="hidden" />
-      <button data-action="reset" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
-        ${icon('restart_alt', 'text-secondary')}
-        <span class="text-body-md">Erase all data & start fresh</span>
+      <button data-action="reset" class="w-full flex items-center gap-3 py-4 text-error border-t border-surface-container">
+        ${icon('restart_alt', 'text-error')}
+        <span class="text-body-md font-semibold">Erase all data & start fresh</span>
       </button>
     </section>
   </main>`;
