@@ -4,17 +4,11 @@ import { exportCsv, importCsv, deliverCsv } from '../csv.js';
 import { refreshIdleTimer } from '../engine.js';
 import { playChime } from '../notify.js';
 import { nativeTimer, stopNativeTimer } from '../native/timer-service.js';
-import { applyTheme } from '../theme.js';
 import {
   subHeader, icon, confirmSheet, showSheet, esc, inputCls,
   stepperRow, bindSteppers, setStepperValue, mountPresetChips,
+  themeChooser, bindThemeChooser,
 } from '../ui.js';
-
-const THEMES = [
-  { id: 'light', icon: 'light_mode', label: 'Light' },
-  { id: 'dark', icon: 'dark_mode', label: 'Dark' },
-  { id: 'system', icon: 'brightness_auto', label: 'System' },
-];
 
 function toggleRow(label, key, on) {
   return `
@@ -34,17 +28,7 @@ export function render() {
 
     <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mb-gutter">
       <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-3">Appearance</h2>
-      <div class="flex gap-2 pb-4" data-theme-group>
-        ${THEMES.map((t) => `
-        <button data-theme="${t.id}" class="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border transition-all duration-200 ${
-          s.theme === t.id
-            ? 'bg-accent text-on-primary border-transparent'
-            : 'border-surface-container-highest text-secondary'
-        }">
-          ${icon(t.icon)}
-          <span class="text-label-md">${t.label}</span>
-        </button>`).join('')}
-      </div>
+      <div class="pb-4">${themeChooser()}</div>
     </section>
 
     <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mb-gutter">
@@ -118,20 +102,7 @@ export function render() {
 }
 
 export function mount(root) {
-  // --- theme: swap selection in place, no page re-render ---
-  const themeGroup = root.querySelector('[data-theme-group]');
-  themeGroup.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-theme]');
-    if (!btn) return;
-    setSettings({ theme: btn.getAttribute('data-theme') });
-    applyTheme();
-    themeGroup.querySelectorAll('[data-theme]').forEach((b) => {
-      const active = b === btn;
-      b.className = `flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border transition-all duration-200 ${
-        active ? 'bg-accent text-on-primary border-transparent' : 'border-surface-container-highest text-secondary'
-      }`;
-    });
-  });
+  bindThemeChooser(root);
 
   // --- timer steppers + preset chips ---
   const redrawChips = mountPresetChips(root.querySelector('[data-presets]'), {

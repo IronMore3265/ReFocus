@@ -1,10 +1,18 @@
 // First-launch onboarding: animated tour of what ReFocus does,
-// then name + timer rhythm.
+// then theme + name + timer rhythm.
 import { getProfile, setProfile, getSettings, setSettings } from '../store.js';
-import { icon, esc, inputCls } from '../ui.js';
+import { icon, esc, inputCls, themeChooser, bindThemeChooser } from '../ui.js';
 import { refreshIdleTimer } from '../engine.js';
 
 let step = 0;
+
+// The round illustration the setup slides share
+function badge(iconName) {
+  return `
+  <div class="float w-24 h-24 rounded-full bg-surface-container-low border border-surface-container-high flex items-center justify-center mb-stack-lg">
+    ${icon(iconName, 'text-accent-soft text-[48px]')}
+  </div>`;
+}
 
 // Animated dial used on the welcome + focus slides
 function dial(accentVar, sweep = false) {
@@ -63,19 +71,23 @@ const slides = [
     copy: 'Plan tasks with due dates and subtasks. Consistency earns achievement tiers — Bronze all the way to Diamond.',
   },
   {
-    art: () => `
-    <div class="float w-24 h-24 rounded-full bg-surface-container-low border border-surface-container-high flex items-center justify-center mb-stack-lg">
-      ${icon('waving_hand', 'text-accent-soft text-[48px]')}
-    </div>`,
+    setup: true,
+    art: () => badge('palette'),
+    title: 'Pick your theme',
+    copy: 'Light, dark, or follow your system — switch anytime in Settings.',
+    form: () => `<div class="w-full max-w-xs mt-stack-md">${themeChooser()}</div>`,
+    mount: (root) => bindThemeChooser(root),
+  },
+  {
+    setup: true,
+    art: () => badge('waving_hand'),
     title: 'What should we call you?',
     copy: 'Used for your daily greeting.',
     form: () => `<input data-name type="text" placeholder="Your name" value="${esc(getProfile().name)}" class="${inputCls} max-w-xs text-center mt-2" />`,
   },
   {
-    art: () => `
-    <div class="float w-24 h-24 rounded-full bg-surface-container-low border border-surface-container-high flex items-center justify-center mb-stack-lg">
-      ${icon('tune', 'text-accent-soft text-[48px]')}
-    </div>`,
+    setup: true,
+    art: () => badge('tune'),
     title: 'Your rhythm',
     copy: 'You can change these anytime in Settings.',
     form: () => {
@@ -91,6 +103,9 @@ const slides = [
   },
 ];
 
+// First slide that asks the user for something — where "Skip tour" lands.
+const SETUP_STEP = slides.findIndex((s) => s.setup);
+
 export function render() {
   step = 0;
   return shell();
@@ -98,8 +113,14 @@ export function render() {
 
 function shell() {
   const s = slides[step];
+  const last = step === slides.length - 1;
   return `
-  <main class="min-h-screen flex flex-col items-center justify-center px-margin-mobile py-12 text-center bg-surface">
+  <main class="min-h-screen flex flex-col px-margin-mobile pt-safe pb-12 text-center bg-surface">
+    <div class="h-14 flex items-center justify-end">
+      ${step < SETUP_STEP ? `
+      <button data-action="skip-tour" class="px-3 py-2 text-label-md text-secondary active:opacity-70 transition-opacity">Skip tour</button>` : ''}
+    </div>
+
     <div class="flex flex-col items-center flex-grow justify-center w-full">
       <div class="flex flex-col items-center w-full fade-in" data-slide>
         ${s.art()}
@@ -108,19 +129,26 @@ function shell() {
         ${s.form ? s.form() : ''}
       </div>
     </div>
-    <div class="flex gap-2 mb-stack-md">
+
+    <div class="flex justify-center gap-2 mb-stack-md">
       ${slides.map((_, i) => `<div class="w-2 h-2 rounded-full transition-colors duration-300 ${i === step ? 'bg-accent' : 'bg-surface-dim'}"></div>`).join('')}
     </div>
-    <div class="flex gap-3 w-full max-w-xs">
-      ${step > 0 && step < 4 ? `<button data-action="skip-tour" class="flex-1 py-4 rounded-full border border-surface-container-highest text-secondary text-label-md">Skip tour</button>` : ''}
-      <button data-action="next" class="flex-[2] py-4 rounded-full bg-accent text-on-primary text-label-md active:scale-[0.98] transition-transform">
-        ${step === slides.length - 1 ? 'Start Focusing' : 'Continue'}
+    <div class="flex gap-3 w-full max-w-xs mx-auto">
+      ${step > 0 ? `
+      <button data-action="back" class="flex-1 py-4 rounded-full border border-surface-container-highest text-secondary text-label-md flex items-center justify-center gap-1 active:scale-[0.98] transition-transform">
+        ${icon('chevron_left', 'text-[18px]')} Back
+      </button>` : ''}
+      <button data-action="next" class="flex-[2] py-4 rounded-full bg-accent text-on-primary text-label-md flex items-center justify-center gap-1 active:scale-[0.98] transition-transform">
+        ${last ? 'Start Focusing' : 'Next'}
+        ${last ? '' : icon('chevron_right', 'text-[18px]')}
       </button>
     </div>
   </main>`;
 }
 
 export function mount(root) {
+  // Whatever the current slide collected is saved before we leave it, in either
+  // direction — so stepping back and forward never loses an entry.
   const persistInputs = () => {
     const nameInput = root.querySelector('[data-name]');
     if (nameInput) setProfile({ name: nameInput.value.trim() });
@@ -134,21 +162,24 @@ export function mount(root) {
     }
   };
   const goto = (n) => {
+    persistInputs();
     step = n;
     root.innerHTML = shell();
     wire();
   };
-  const finish = () => {
-    setProfile({ onboarded: true });
-    location.hash = '#/home';
-  };
   const wire = () => {
+    slides[step].mount?.(root);
     root.querySelector('[data-action="next"]').addEventListener('click', () => {
-      persistInputs();
-      if (step < slides.length - 1) goto(step + 1);
-      else finish();
+      if (step < slides.length - 1) {
+        goto(step + 1);
+      } else {
+        persistInputs();
+        setProfile({ onboarded: true });
+        location.hash = '#/home';
+      }
     });
-    root.querySelector('[data-action="skip-tour"]')?.addEventListener('click', () => goto(4));
+    root.querySelector('[data-action="back"]')?.addEventListener('click', () => goto(step - 1));
+    root.querySelector('[data-action="skip-tour"]')?.addEventListener('click', () => goto(SETUP_STEP));
   };
   wire();
 }

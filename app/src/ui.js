@@ -1,5 +1,9 @@
 // Shared UI building blocks, styled per the Ember Serenity design system.
-import { formatDate, getProfile, currentStreak, dayKey, getPresets, deletePreset } from './store.js';
+import {
+  formatDate, getProfile, currentStreak, dayKey, getPresets, deletePreset,
+  getSettings, setSettings,
+} from './store.js';
+import { applyTheme } from './theme.js';
 
 // Re-render the current route (main.js re-renders on hashchange)
 export function rerender() {
@@ -267,6 +271,47 @@ export function confirmSheet({ title, message, confirmLabel = 'Delete', onConfir
   el.querySelector('[data-confirm]').addEventListener('click', () => {
     close();
     onConfirm();
+  });
+}
+
+// ---------- theme chooser ----------
+// Shared by Settings and onboarding; applies the theme live on tap.
+const THEMES = [
+  { id: 'light', icon: 'light_mode', label: 'Light' },
+  { id: 'dark', icon: 'dark_mode', label: 'Dark' },
+  { id: 'system', icon: 'brightness_auto', label: 'System' },
+];
+
+const themeBtnCls = (active) =>
+  `flex-1 flex flex-col items-center gap-1 py-3 rounded-xl border transition-all duration-200 ${
+    active ? 'bg-accent text-on-primary border-transparent' : 'border-surface-container-highest text-secondary'
+  }`;
+
+export function themeChooser() {
+  const cur = getSettings().theme;
+  return `
+  <div class="flex gap-2" data-theme-group>
+    ${THEMES.map((t) => `
+    <button type="button" data-theme="${t.id}" class="${themeBtnCls(cur === t.id)}">
+      ${icon(t.icon)}
+      <span class="text-label-md">${t.label}</span>
+    </button>`).join('')}
+  </div>`;
+}
+
+// Wires the themeChooser() inside `scope`: stores the pick, applies it, and
+// swaps the selection in place (no re-render, so the transition stays smooth).
+export function bindThemeChooser(scope) {
+  const group = scope.querySelector('[data-theme-group]');
+  if (!group) return;
+  group.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-theme]');
+    if (!btn) return;
+    setSettings({ theme: btn.getAttribute('data-theme') });
+    applyTheme();
+    group.querySelectorAll('[data-theme]').forEach((b) => {
+      b.className = themeBtnCls(b === btn);
+    });
   });
 }
 

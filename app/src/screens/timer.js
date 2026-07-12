@@ -9,6 +9,10 @@ import {
   stepperRow, bindSteppers, setStepperValue, mountPresetChips,
 } from '../ui.js';
 
+// Sessions / Break / Skip tiles — outlined to match the reset + options buttons.
+const STAT_BOX =
+  'flex-1 bg-surface-container-low border border-outline p-4 rounded-xl flex flex-col items-center justify-center';
+
 function centerHtml(t) {
   return `
     <span data-clock class="text-headline-xl text-on-surface font-bold tracking-tight" style="font-feature-settings:'tnum'">${fmtClock(remainingMs(t))}</span>
@@ -47,15 +51,15 @@ export function render() {
     </div>
 
     <div class="mt-stack-lg flex gap-4 w-full max-w-sm">
-      <div class="flex-1 bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center">
+      <div class="${STAT_BOX}">
         <span class="text-label-sm text-secondary">Sessions</span>
         <span data-round class="text-headline-md text-on-surface">${t.round}/${s.sessionsPerRound}</span>
       </div>
-      <div class="flex-1 bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center">
+      <div class="${STAT_BOX}">
         <span class="text-label-sm text-secondary">Break</span>
         <span class="text-headline-md text-on-surface">${s.breakMin}m</span>
       </div>
-      <button data-action="skip" class="flex-1 bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center active:scale-95 transition-transform">
+      <button data-action="skip" class="${STAT_BOX} active:scale-95 transition-transform">
         <span class="text-label-sm text-secondary">Skip</span>
         ${icon('skip_next', 'text-on-surface mt-1')}
       </button>
