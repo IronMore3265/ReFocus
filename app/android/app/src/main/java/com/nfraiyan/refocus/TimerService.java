@@ -236,10 +236,10 @@ public class TimerService extends Service {
 
   private void playAlarm() {
     stopPlayer();
-    // The app's own chime (res/raw/chime.wav — the same triad the browser build
-    // synthesizes in notify.js), bundled rather than picked, so it always plays
-    // and always sounds like ReFocus. Opened as a raw file descriptor: the
-    // android.resource:// URI route fails silently on some devices.
+    // The app's own chime (res/raw/chime.ogg — the ReFocus Chime), bundled
+    // rather than picked, so it always plays and always sounds like ReFocus.
+    // Opened as a raw file descriptor: the android.resource:// URI route fails
+    // silently on some devices.
     try {
       alarmPlayer = new MediaPlayer();
       alarmPlayer.setAudioAttributes(new AudioAttributes.Builder()
