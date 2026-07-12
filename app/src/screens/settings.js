@@ -72,7 +72,7 @@ export function render() {
           </button>
         </div>
         <p class="text-label-sm text-secondary mt-3">${nativeTimer
-          ? 'Repeats for 15 seconds when a session ends, unless you tap Done — and rings on time even with the app closed.'
+          ? 'Repeats for 15 seconds when a session ends, unless you tap Done.'
           : 'The browser plays the chime once when a session ends.'}</p>
       </div>
     </section>
@@ -111,7 +111,7 @@ export function render() {
 
     <footer class="pt-stack-lg pb-2 text-center">
       <p class="text-label-md text-on-surface">ReFocus <span class="text-secondary">v${esc(__APP_VERSION__)}</span></p>
-      <p class="text-body-sm text-secondary mt-1">Developed &amp; created by Nabil Fuad Raiyan</p>
+      <p class="text-body-sm text-secondary mt-1">Developed &amp; Created by <strong class="font-semibold text-on-surface">Nabil Fuad Raiyan</strong></p>
       <p class="text-label-sm text-secondary mt-1">© ${new Date().getFullYear()} Nabil Fuad Raiyan. All rights reserved.</p>
     </footer>
   </main>`;
