@@ -1,6 +1,6 @@
 // Bridge to the native TimerService plugin (android/.../TimerServicePlugin.java).
-// It renders the notification countdown, owns the end-of-phase alarm, and plays
-// the completion sound — all of which have to keep working with the WebView
+// It renders the notification countdown, owns the end-of-phase alarm, and loops
+// the completion chime — all of which have to keep working with the WebView
 // frozen, which is why none of it can live in JS.
 //
 // Every export no-ops (or returns a sane default) in the browser, so the web
@@ -62,32 +62,4 @@ export async function stopNativeAlert() {
 export function onNativeTimerEvent(event, cb) {
   if (!TimerServiceNative) return;
   TimerServiceNative.addListener(event, cb);
-}
-
-// ---------- completion sound (device ringtones) ----------
-
-export async function getNativeSound() {
-  if (!TimerServiceNative) return null;
-  try {
-    return await TimerServiceNative.getSound(); // { name, isDefault }
-  } catch {
-    return null;
-  }
-}
-
-export async function pickNativeSound() {
-  if (!TimerServiceNative) return null;
-  return TimerServiceNative.pickSound(); // opens the system ringtone picker
-}
-
-export async function clearNativeSound() {
-  if (!TimerServiceNative) return null;
-  return TimerServiceNative.clearSound();
-}
-
-export async function previewNativeSound() {
-  if (!TimerServiceNative) return;
-  try {
-    await TimerServiceNative.previewSound();
-  } catch { /* unplayable — the settings screen says so */ }
 }

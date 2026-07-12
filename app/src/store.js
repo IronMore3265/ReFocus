@@ -70,18 +70,6 @@ const DEFAULT_SETTINGS = {
   theme: 'system', // 'light' | 'dark' | 'system'
 };
 
-// The completion sound is a device ringtone owned by the native side (it has to
-// be playable with the app closed, which a data URL never was). Native holds the
-// content:// URI; this is only a mirror of its name, so Settings can render it
-// without waiting on the bridge.
-export function getAlarmSound() {
-  return load('alarmSound', null); // { name, isDefault } | null
-}
-export function setAlarmSound(sound) {
-  if (sound === null) localStorage.removeItem(PREFIX + 'alarmSound');
-  else save('alarmSound', sound);
-}
-
 export function getSettings() {
   return { ...DEFAULT_SETTINGS, ...load('settings', {}) };
 }

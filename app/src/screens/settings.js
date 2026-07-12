@@ -1,11 +1,9 @@
-// Settings — appearance, timer defaults, alerts (with custom sound), data management.
-import { getSettings, setSettings, resetAllData, restoreAll, getAlarmSound, setAlarmSound, todayKey, getApifyToken, setApifyToken } from '../store.js';
+// Settings — appearance, timer defaults, alerts, data management.
+import { getSettings, setSettings, resetAllData, restoreAll, todayKey, getApifyToken, setApifyToken } from '../store.js';
 import { exportCsv, importCsv, deliverCsv } from '../csv.js';
 import { refreshIdleTimer } from '../engine.js';
 import { playChime } from '../notify.js';
-import {
-  nativeTimer, pickNativeSound, clearNativeSound, previewNativeSound, getNativeSound, stopNativeTimer,
-} from '../native/timer-service.js';
+import { nativeTimer, stopNativeTimer } from '../native/timer-service.js';
 import { applyTheme } from '../theme.js';
 import {
   subHeader, icon, confirmSheet, showSheet, esc, inputCls,
@@ -26,11 +24,6 @@ function toggleRow(label, key, on) {
       <span data-knob class="toggle-knob absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm" style="left:${on ? '1.5rem' : '0.25rem'}"></span>
     </span>
   </button>`;
-}
-
-function soundRowLabel() {
-  if (!nativeTimer) return 'Built-in chime';
-  return getAlarmSound()?.name || 'Default alarm sound';
 }
 
 export function render() {
@@ -69,22 +62,18 @@ export function render() {
       ${toggleRow('Sound', 'sound', s.sound)}
       ${toggleRow('Vibration', 'vibration', s.vibration)}
       <div class="py-4">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center justify-between">
           <div>
             <span class="text-body-md text-on-surface block">Completion sound</span>
-            <span data-sound-name class="text-body-sm text-secondary">${esc(soundRowLabel())}</span>
+            <span class="text-body-sm text-secondary">ReFocus chime</span>
           </div>
           <button data-action="preview" class="p-3 rounded-full border border-surface-container-highest text-accent-soft active:scale-95 transition-transform">
             ${icon('play_arrow', '', true)}
           </button>
         </div>
-        <div class="flex gap-2 ${nativeTimer ? '' : 'hidden'}">
-          <button data-action="pick-sound" class="flex-1 py-3 rounded-full border border-on-surface text-on-surface text-label-md active:scale-[0.98] transition-transform">Choose ringtone</button>
-          <button data-action="default-sound" class="flex-1 py-3 rounded-full border border-surface-container-highest text-secondary text-label-md active:scale-[0.98] transition-transform ${getAlarmSound() ? '' : 'hidden'}">Use default</button>
-        </div>
         <p class="text-label-sm text-secondary mt-3">${nativeTimer
-          ? 'Repeats until you dismiss it, and rings on time even with the app closed.'
-          : 'The browser plays a built-in chime. Install the app to pick one of your device\'s ringtones.'}</p>
+          ? 'Repeats for 15 seconds when a session ends, unless you tap Done — and rings on time even with the app closed.'
+          : 'The browser plays the chime once when a session ends.'}</p>
       </div>
     </section>
 
@@ -119,6 +108,12 @@ export function render() {
         <span class="text-body-md font-semibold">Erase all data & start fresh</span>
       </button>
     </section>
+
+    <footer class="pt-stack-lg pb-2 text-center">
+      <p class="text-label-md text-on-surface">ReFocus <span class="text-secondary">v${esc(__APP_VERSION__)}</span></p>
+      <p class="text-body-sm text-secondary mt-1">Developed &amp; created by Nabil Fuad Raiyan</p>
+      <p class="text-label-sm text-secondary mt-1">© ${new Date().getFullYear()} Nabil Fuad Raiyan. All rights reserved.</p>
+    </footer>
   </main>`;
 }
 
@@ -167,28 +162,8 @@ export function mount(root) {
     });
   });
 
-  // --- completion sound: a device ringtone, picked and played natively ---
-  const nameEl = root.querySelector('[data-sound-name]');
-  const defaultBtn = root.querySelector('[data-action="default-sound"]');
-
-  // Native owns the URI; keep our label in step with whatever it actually has.
-  const showSound = (sound) => {
-    if (!sound) return;
-    setAlarmSound(sound.isDefault ? null : sound);
-    nameEl.textContent = sound.name;
-    defaultBtn.classList.toggle('hidden', !!sound.isDefault);
-  };
-  if (nativeTimer) getNativeSound().then(showSound);
-
-  root.querySelector('[data-action="preview"]').addEventListener('click', () => {
-    if (nativeTimer) previewNativeSound(); else playChime();
-  });
-  root.querySelector('[data-action="pick-sound"]')?.addEventListener('click', async () => {
-    showSound(await pickNativeSound());
-  });
-  defaultBtn?.addEventListener('click', async () => {
-    showSound(await clearNativeSound());
-  });
+  // --- completion sound: one bundled chime, previewed in-app either way ---
+  root.querySelector('[data-action="preview"]').addEventListener('click', playChime);
 
   // --- book search: Apify token ---
   root.querySelector('[data-apify-token]').addEventListener('change', (e) => {
