@@ -216,7 +216,15 @@ export function showSheet(innerHtml) {
     if (startY === null || closed) return;
     const dy = e.touches[0].clientY - startY;
     if (dy <= 0 && !dragging) { startY = null; return; } // upward — let it scroll
-    dragging = true;
+    if (!dragging) {
+      dragging = true;
+      // `.modal-sheet` fills the sheetIn keyframes forwards, and an animation's
+      // transform outranks the style attribute — so the drag below is invisible
+      // until the animation is off. Also take the gesture off the compositor, or
+      // Android hands us non-cancelable touchmoves and preventDefault is ignored.
+      sheet.style.animation = 'none';
+      sheet.classList.add('is-dragging');
+    }
     sheet.style.transition = 'none';
     sheet.style.transform = `translateY(${Math.max(0, dy)}px)`;
     e.preventDefault();
@@ -227,6 +235,8 @@ export function showSheet(innerHtml) {
     const dy = e.changedTouches[0].clientY - startY;
     const dt = Date.now() - startT;
     startY = null;
+    dragging = false;
+    sheet.classList.remove('is-dragging');
     const flick = dy > 60 && dt < 300;
     if (dy > sheet.offsetHeight * 0.25 || flick) {
       closed = true;

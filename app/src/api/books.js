@@ -3,7 +3,7 @@
 // Every source is mapped to one shape:
 //   { title, author, synopsis, totalPages, coverUrl, source }
 
-const GOODREADS_ACTOR = 'shahidirfan~Goodreads-Book-Scraper';
+const GOODREADS_ACTOR = 'thescrapelab~Apify-Goodreads-Scraper';
 
 // Google Books key — raises the free quota for cover/synopsis lookups. Lives
 // in gitignored app/.env (Vite inlines it at build time); search still works
@@ -61,8 +61,19 @@ export async function searchBooksFree(query) {
   };
 }
 
+// Search-result covers come back as Goodreads' list thumbnails (…/110._SY75_.jpg);
+// dropping the size segment yields the full-resolution image.
+function fullSizeCover(url) {
+  return typeof url === 'string' ? url.replace(/\._S[XY]\d+_(?=\.\w+$)/, '') : url;
+}
+
+function authorNames(it) {
+  if (typeof it.author === 'string' && it.author) return it.author;
+  return (it.authors || []).map((a) => a?.name).filter(Boolean).join(', ');
+}
+
 // Goodreads via Apify's synchronous run endpoint: one POST that starts the
-// actor, waits for it, and returns the dataset items. Slow (~20-60 s).
+// actor, waits for it, and returns the dataset items. Slow (~15-60 s).
 export async function searchGoodreads(query, token) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 90_000);
@@ -73,29 +84,70 @@ export async function searchGoodreads(query, token) {
       headers: { 'Content-Type': 'application/json' },
       signal: ctrl.signal,
       body: JSON.stringify({
-        startUrls: [{ url: `https://www.goodreads.com/search?q=${encodeURIComponent(query)}` }],
-        results_wanted: 6,
-        max_pages: 1,
+        targets: [query],
+        searchMode: 'books',
+        depth: 'shallow',
+        maxSearchResultsPerQuery: 6,
+        // The actor emits a `search_result` row AND a richer `book` row per match,
+        // so the item cap has to cover both or the last few books lose their
+        // synopsis. It defaults to 1 — always send it.
+        maxItems: 14,
+        proxyConfiguration: { useApifyProxy: true },
       }),
     });
     if (res.status === 401 || res.status === 403) throw new Error('Apify token was rejected — check it in Settings.');
     if (!res.ok) throw new Error(`Goodreads search failed (HTTP ${res.status})`);
     const items = await res.json();
-    // Documented schema: title, author, description, pages, image — but probe
-    // aliases anyway since scraper output shapes drift between versions.
-    return (Array.isArray(items) ? items : []).map((it) => ({
-      title: pick(it.title, it.bookTitle, it.name) || '',
-      author: typeof it.author === 'object'
-        ? pick(it.author?.name) || ''
-        : pick(it.author, (it.authors || []).map((a) => a?.name || a).join(', ')) || '',
-      synopsis: pick(it.description, it.synopsis, it.summary) || '',
-      totalPages: Number(pick(it.pages, it.numPages, it.pageCount, it.numberOfPages)) || 0,
-      coverUrl: pick(it.image, it.coverImage, it.imageUrl, it.cover, it.coverUrl),
-      source: 'Goodreads',
-    })).filter((b) => b.title);
+    const rows = Array.isArray(items) ? items : [];
+
+    // `search_result` rows carry the author and the ranking; `book` rows carry the
+    // synopsis and a full-size cover. Same book, two rows — join them on goodreadsId.
+    const details = new Map();
+    rows.filter((it) => it.recordType === 'book')
+      .forEach((it) => { if (it.goodreadsId) details.set(String(it.goodreadsId), it); });
+
+    const matches = rows.filter((it) => it.recordType === 'search_result');
+    // Fall back to the detail rows if the actor ever stops labelling matches.
+    const ordered = matches.length ? matches : [...details.values()];
+
+    return ordered.map((it) => {
+      const d = details.get(String(it.goodreadsId)) || {};
+      return {
+        title: pick(it.title, d.title, d.fullTitle) || '',
+        author: authorNames(it) || authorNames(d),
+        synopsis: pick(d.description, it.description) || '',
+        totalPages: Number(pick(it.pageCount, d.pageCount)) || 0,
+        coverUrl: pick(d.bookCoverImageUrl, fullSizeCover(it.coverImageUrl)),
+        source: 'Goodreads',
+      };
+    }).filter((b) => b.title);
   } finally {
     clearTimeout(timer);
   }
+}
+
+// A cover picked from the device. Books live in localStorage, so a raw phone
+// photo (several MB once base64'd) would blow the quota — downscale to a
+// thumbnail first. ~40 KB at 400px wide, which is plenty at the sizes we render.
+export function coverFromFile(file, maxWidth = 400) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("That file isn't an image we can read."));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 // Covers render in the app bar/list on every screen and must survive offline

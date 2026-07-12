@@ -1,8 +1,11 @@
 // Settings — appearance, timer defaults, alerts (with custom sound), data management.
-import { getSettings, setSettings, resetAllData, restoreAll, getCustomSound, setCustomSound, todayKey, getApifyToken, setApifyToken } from '../store.js';
+import { getSettings, setSettings, resetAllData, restoreAll, getAlarmSound, setAlarmSound, todayKey, getApifyToken, setApifyToken } from '../store.js';
 import { exportCsv, importCsv, deliverCsv } from '../csv.js';
 import { refreshIdleTimer } from '../engine.js';
-import { playCompletionSound } from '../notify.js';
+import { playChime } from '../notify.js';
+import {
+  nativeTimer, pickNativeSound, clearNativeSound, previewNativeSound, getNativeSound, stopNativeTimer,
+} from '../native/timer-service.js';
 import { applyTheme } from '../theme.js';
 import {
   subHeader, icon, confirmSheet, showSheet, esc, inputCls,
@@ -26,8 +29,8 @@ function toggleRow(label, key, on) {
 }
 
 function soundRowLabel() {
-  const custom = getCustomSound();
-  return custom ? custom.name : 'Default chime';
+  if (!nativeTimer) return 'Built-in chime';
+  return getAlarmSound()?.name || 'Default alarm sound';
 }
 
 export function render() {
@@ -75,12 +78,13 @@ export function render() {
             ${icon('play_arrow', '', true)}
           </button>
         </div>
-        <div class="flex gap-2">
-          <button data-action="pick-sound" class="flex-1 py-3 rounded-full border border-on-surface text-on-surface text-label-md active:scale-[0.98] transition-transform">Choose from device</button>
-          <button data-action="default-sound" class="flex-1 py-3 rounded-full border border-surface-container-highest text-secondary text-label-md active:scale-[0.98] transition-transform ${getCustomSound() ? '' : 'hidden'}">Use default</button>
+        <div class="flex gap-2 ${nativeTimer ? '' : 'hidden'}">
+          <button data-action="pick-sound" class="flex-1 py-3 rounded-full border border-on-surface text-on-surface text-label-md active:scale-[0.98] transition-transform">Choose ringtone</button>
+          <button data-action="default-sound" class="flex-1 py-3 rounded-full border border-surface-container-highest text-secondary text-label-md active:scale-[0.98] transition-transform ${getAlarmSound() ? '' : 'hidden'}">Use default</button>
         </div>
-        <input data-sound-file type="file" accept="audio/*" class="hidden" />
-        <p class="text-label-sm text-secondary mt-3">Plays when a session ends while the app is open. Background notifications use your system notification sound.</p>
+        <p class="text-label-sm text-secondary mt-3">${nativeTimer
+          ? 'Repeats until you dismiss it, and rings on time even with the app closed.'
+          : 'The browser plays a built-in chime. Install the app to pick one of your device\'s ringtones.'}</p>
       </div>
     </section>
 
@@ -163,33 +167,27 @@ export function mount(root) {
     });
   });
 
-  // --- completion sound ---
-  const fileInput = root.querySelector('[data-sound-file]');
+  // --- completion sound: a device ringtone, picked and played natively ---
   const nameEl = root.querySelector('[data-sound-name]');
   const defaultBtn = root.querySelector('[data-action="default-sound"]');
 
-  root.querySelector('[data-action="preview"]').addEventListener('click', playCompletionSound);
-  root.querySelector('[data-action="pick-sound"]').addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-    if (file.size > 3 * 1024 * 1024) {
-      nameEl.textContent = 'File too large — pick one under 3 MB';
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setCustomSound({ name: file.name, dataUrl: reader.result });
-      nameEl.textContent = file.name;
-      defaultBtn.classList.remove('hidden');
-      playCompletionSound();
-    };
-    reader.readAsDataURL(file);
+  // Native owns the URI; keep our label in step with whatever it actually has.
+  const showSound = (sound) => {
+    if (!sound) return;
+    setAlarmSound(sound.isDefault ? null : sound);
+    nameEl.textContent = sound.name;
+    defaultBtn.classList.toggle('hidden', !!sound.isDefault);
+  };
+  if (nativeTimer) getNativeSound().then(showSound);
+
+  root.querySelector('[data-action="preview"]').addEventListener('click', () => {
+    if (nativeTimer) previewNativeSound(); else playChime();
   });
-  defaultBtn.addEventListener('click', () => {
-    setCustomSound(null);
-    nameEl.textContent = 'Default chime';
-    defaultBtn.classList.add('hidden');
+  root.querySelector('[data-action="pick-sound"]')?.addEventListener('click', async () => {
+    showSound(await pickNativeSound());
+  });
+  defaultBtn?.addEventListener('click', async () => {
+    showSound(await clearNativeSound());
   });
 
   // --- book search: Apify token ---
@@ -227,6 +225,8 @@ export function mount(root) {
         onConfirm: () => {
           restoreAll(data);
           localStorage.removeItem('fs.timer');
+          localStorage.removeItem('fs.timerRev');
+          stopNativeTimer();
           location.reload();
         },
       });
@@ -242,6 +242,8 @@ export function mount(root) {
       onConfirm: () => {
         resetAllData();
         localStorage.removeItem('fs.timer');
+        localStorage.removeItem('fs.timerRev');
+        stopNativeTimer();
         location.hash = '#/onboarding';
         location.reload();
       },

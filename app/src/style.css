@@ -303,6 +303,8 @@ html[data-vt='back']::view-transition-new(root) { animation-name: vtSlideInLeft;
 @keyframes backdropOut { from { opacity: 1; } to { opacity: 0; } }
 /* contain stops a scrolled-to-the-end sheet from chaining into the page behind it */
 .modal-sheet { animation: sheetIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; overscroll-behavior: contain; touch-action: pan-y; }
+/* while a swipe-to-dismiss drag is in flight the sheet must not also scroll */
+.modal-sheet.is-dragging { touch-action: none; }
 @keyframes sheetIn {
   from { transform: translateY(48px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }

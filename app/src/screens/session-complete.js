@@ -1,6 +1,7 @@
 // Full-screen summary shown when a focus session finishes.
 import { getSessions, updateSession, currentStreak, focusMinutesOn, todayKey, getSettings } from '../store.js';
 import { getTimer, startTimer } from '../engine.js';
+import { stopNativeAlert } from '../native/timer-service.js';
 import { icon } from '../ui.js';
 
 export function render() {
@@ -52,6 +53,9 @@ export function render() {
 }
 
 export function mount(root) {
+  // Reaching this screen is the acknowledgement — stop the alarm ringing.
+  stopNativeAlert();
+
   const saveNote = () => {
     const note = root.querySelector('[data-note]').value.trim();
     const t = getTimer();
