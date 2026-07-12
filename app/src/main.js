@@ -2,6 +2,7 @@ import './style.css';
 import { getProfile } from './store.js';
 import { tickTimer, onTimerChange } from './engine.js';
 import { initNotifications } from './notify.js';
+import { initCelebrations } from './celebrate.js';
 import { applyTheme } from './theme.js';
 import { icon, showSheet, avatarEl } from './ui.js';
 
@@ -95,7 +96,7 @@ function openMenu() {
     </button>`;
   showSheet(`
     <h2 class="text-headline-md text-on-surface mb-4">ReFocus</h2>
-    ${item('#/stats', 'monitoring', 'Focus Dashboard')}
+    ${item('#/stats', 'monitoring', 'Focus Stats')}
     ${item('#/history', 'calendar_month', 'History')}
     ${item('#/achievements', 'trophy', 'Achievements')}
     ${item('#/shelf', 'collections_bookmark', 'Finished Shelf')}
@@ -131,4 +132,5 @@ import('@capacitor/app')
 window.addEventListener('hashchange', render);
 applyTheme();
 initNotifications();
+initCelebrations();
 render();

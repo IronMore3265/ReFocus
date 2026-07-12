@@ -1,24 +1,19 @@
 // Settings — appearance, timer defaults, alerts (with custom sound), data management.
-import { getSettings, setSettings, resetAllData, getCustomSound, setCustomSound } from '../store.js';
+import { getSettings, setSettings, resetAllData, restoreAll, getCustomSound, setCustomSound, todayKey, getApifyToken, setApifyToken } from '../store.js';
+import { exportCsv, importCsv, deliverCsv } from '../csv.js';
 import { refreshIdleTimer } from '../engine.js';
 import { playCompletionSound } from '../notify.js';
 import { applyTheme } from '../theme.js';
-import { subHeader, icon, confirmSheet, inputCls, esc } from '../ui.js';
+import {
+  subHeader, icon, confirmSheet, showSheet, esc, inputCls,
+  stepperRow, bindSteppers, setStepperValue, mountPresetChips,
+} from '../ui.js';
 
 const THEMES = [
   { id: 'light', icon: 'light_mode', label: 'Light' },
   { id: 'dark', icon: 'dark_mode', label: 'Dark' },
   { id: 'system', icon: 'brightness_auto', label: 'System' },
 ];
-
-function numRow(label, key, value, min, max) {
-  return `
-  <div class="flex items-center justify-between py-4 border-b border-surface-container">
-    <span class="text-body-md text-on-surface">${label}</span>
-    <input data-num="${key}" type="number" min="${min}" max="${max}" value="${value}"
-      class="${inputCls} !w-24 text-center" />
-  </div>`;
-}
 
 function toggleRow(label, key, on) {
   return `
@@ -57,11 +52,12 @@ export function render() {
     </section>
 
     <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mb-gutter">
-      <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">Timer</h2>
-      ${numRow('Focus length (min)', 'focusMin', s.focusMin, 1, 180)}
-      ${numRow('Break length (min)', 'breakMin', s.breakMin, 1, 60)}
-      ${numRow('Sessions per round', 'sessionsPerRound', s.sessionsPerRound, 1, 12)}
-      ${numRow('Daily goal (min)', 'dailyGoalMin', s.dailyGoalMin, 15, 720)}
+      <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-3">Timer</h2>
+      <div data-presets class="pb-3 border-b border-surface-container"></div>
+      ${stepperRow('Focus length', 'focusMin', s.focusMin, { min: 1, max: 180, step: 5 })}
+      ${stepperRow('Break length', 'breakMin', s.breakMin, { min: 1, max: 60 })}
+      ${stepperRow('Sessions per round', 'sessionsPerRound', s.sessionsPerRound, { min: 1, max: 12, unit: '' })}
+      ${stepperRow('Daily goal', 'dailyGoalMin', s.dailyGoalMin, { min: 15, max: 720, step: 15 })}
       <div class="h-2"></div>
     </section>
 
@@ -88,12 +84,32 @@ export function render() {
       </div>
     </section>
 
+    <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mb-gutter">
+      <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">Book Search</h2>
+      <p class="text-body-sm text-secondary py-3">
+        Book search uses free sources (Google Books &amp; Open Library). To also search
+        Goodreads for hard-to-find titles, paste a free Apify API token —
+        create one at apify.com under Settings → API &amp; Integrations.
+      </p>
+      <input data-apify-token type="password" autocomplete="off" value="${esc(getApifyToken())}"
+        class="${inputCls} mb-4" placeholder="apify_api_…" />
+    </section>
+
     <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2">
       <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">Data Management</h2>
       <p class="text-body-sm text-secondary py-3">
         ReFocus stores everything — sessions, books, tasks, and preferences — only on this device.
-        Nothing is sent to a server. Erasing your data restores the app to a fresh install.
+        Nothing is sent to a server. Export a CSV backup to keep your progress safe or move it to another device.
       </p>
+      <button data-action="export" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
+        ${icon('download', 'text-secondary')}
+        <span class="text-body-md">Export data (CSV)</span>
+      </button>
+      <button data-action="import" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
+        ${icon('upload', 'text-secondary')}
+        <span class="text-body-md">Import data (CSV)</span>
+      </button>
+      <input data-import-file type="file" accept=".csv,text/csv,text/plain" class="hidden" />
       <button data-action="reset" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
         ${icon('restart_alt', 'text-secondary')}
         <span class="text-body-md">Erase all data & start fresh</span>
@@ -118,16 +134,19 @@ export function mount(root) {
     });
   });
 
-  // --- numeric rows ---
-  root.querySelectorAll('[data-num]').forEach((input) => {
-    input.addEventListener('change', () => {
-      const key = input.getAttribute('data-num');
-      const min = Number(input.min), max = Number(input.max);
-      const v = Math.min(max, Math.max(min, Number(input.value) || min));
-      input.value = v;
-      setSettings({ [key]: v });
+  // --- timer steppers + preset chips ---
+  const redrawChips = mountPresetChips(root.querySelector('[data-presets]'), {
+    getCurrent: getSettings,
+    onApply: (p) => {
+      setSettings({ focusMin: p.focusMin, breakMin: p.breakMin, sessionsPerRound: p.sessionsPerRound });
       refreshIdleTimer();
-    });
+      ['focusMin', 'breakMin', 'sessionsPerRound'].forEach((k) => setStepperValue(root, k, getSettings()[k]));
+    },
+  });
+  bindSteppers(root, (key, v) => {
+    setSettings({ [key]: v });
+    refreshIdleTimer();
+    redrawChips();
   });
 
   // --- toggles: animate the knob in place, no page re-render ---
@@ -173,7 +192,48 @@ export function mount(root) {
     defaultBtn.classList.add('hidden');
   });
 
+  // --- book search: Apify token ---
+  root.querySelector('[data-apify-token]').addEventListener('change', (e) => {
+    setApifyToken(e.target.value.trim());
+  });
+
   // --- data management ---
+  root.querySelector('[data-action="export"]').addEventListener('click', () => {
+    deliverCsv(`refocus-backup-${todayKey()}.csv`, exportCsv());
+  });
+
+  const importInput = root.querySelector('[data-import-file]');
+  root.querySelector('[data-action="import"]').addEventListener('click', () => importInput.click());
+  importInput.addEventListener('change', () => {
+    const file = importInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      importInput.value = '';
+      let data;
+      try {
+        data = importCsv(reader.result);
+      } catch (err) {
+        showSheet(`
+          <h2 class="text-headline-md text-on-surface mb-2">Import failed</h2>
+          <p class="text-body-md text-secondary mb-6">${esc(err.message)}</p>
+          <button data-close class="w-full py-3 rounded-full border border-on-surface text-on-surface text-label-md">Close</button>`);
+        return;
+      }
+      confirmSheet({
+        title: 'Replace all data?',
+        message: 'Everything currently on this device will be replaced by the contents of this backup. This cannot be undone.',
+        confirmLabel: 'Import & replace',
+        onConfirm: () => {
+          restoreAll(data);
+          localStorage.removeItem('fs.timer');
+          location.reload();
+        },
+      });
+    };
+    reader.readAsText(file);
+  });
+
   root.querySelector('[data-action="reset"]').addEventListener('click', () => {
     confirmSheet({
       title: 'Erase all data?',

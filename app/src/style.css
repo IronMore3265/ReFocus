@@ -174,7 +174,8 @@ html, body {
   background: var(--color-surface);
   color: var(--color-on-surface);
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
+  overflow-x: hidden;
+  overscroll-behavior: none;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -334,6 +335,18 @@ html, body {
 @keyframes shimmerSweep {
   0% { left: -80%; }
   55%, 100% { left: 130%; }
+}
+
+/* Achievement celebration confetti — spans dropped from above the viewport */
+.confetti {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  animation: confettiFall linear both;
+}
+@keyframes confettiFall {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
+  to { transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(720deg); opacity: 0.7; }
 }
 
 /* Gentle float for onboarding illustrations */
