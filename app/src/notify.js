@@ -1,7 +1,7 @@
-// Completion feedback. On device this is all handled natively by TimerService —
-// it holds an exact alarm, so it fires on time even with the app closed, and it
-// loops the same chime (res/raw/chime.wav) until Done is pressed. What is left
-// here is the browser fallback plus the notification permission prompt.
+// Completion feedback. On device, the native TimerService handles the looping
+// alarm chime and vibration — it holds an exact alarm so it fires on time even
+// with the app closed. What is left here is the browser fallback plus the
+// notification permission prompt.
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { getSettings } from './store.js';
@@ -22,23 +22,18 @@ export async function initNotifications() {
   }
 }
 
-// Default completion chime (three ascending sine notes)
+// Play the ReFocus Chime (public/chime.ogg) — a single shot for the browser.
+// On native, the service loops res/raw/chime.ogg itself; we don't double up.
+let chimeAudio = null;
 export function playChime() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const now = ctx.currentTime;
-    [880, 1108.7, 1318.5].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.001, now + i * 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.2, now + i * 0.18 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.18 + 0.5);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(now + i * 0.18);
-      osc.stop(now + i * 0.18 + 0.55);
-    });
+    // Stop any already-playing chime so they don't overlap
+    if (chimeAudio) {
+      chimeAudio.pause();
+      chimeAudio.currentTime = 0;
+    }
+    chimeAudio = new Audio('/chime.ogg');
+    chimeAudio.play();
   } catch { /* audio unavailable */ }
 }
 
