@@ -53,9 +53,10 @@ export function render() {
 }
 
 export function mount(root) {
-  // Reaching this screen is the acknowledgement — stop the alarm ringing.
-  stopNativeAlert();
-
+  // Note: we deliberately do *not* stop the alarm here. This screen opens on its
+  // own the moment the phase ends — a few milliseconds after the chime starts —
+  // so silencing it on mount would mean the session never audibly ends. The
+  // buttons below are the acknowledgement.
   const saveNote = () => {
     const note = root.querySelector('[data-note]').value.trim();
     const t = getTimer();
@@ -63,11 +64,12 @@ export function mount(root) {
   };
   root.querySelector('[data-action="break"]').addEventListener('click', () => {
     saveNote();
-    startTimer(); // phase is already 'break' after focus completion
+    startTimer(); // phase is already 'break' after focus completion; also stops the alarm
     location.hash = '#/timer';
   });
   root.querySelector('[data-action="done"]').addEventListener('click', () => {
     saveNote();
+    stopNativeAlert();
     location.hash = '#/timer';
   });
 }
