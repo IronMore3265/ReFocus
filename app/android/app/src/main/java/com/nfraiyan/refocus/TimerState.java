@@ -110,9 +110,11 @@ public class TimerState {
     return o;
   }
 
-  // PluginCall has no getLong: JS numbers arrive as Double/Integer.
+  // PluginCall has no getLong, and getDouble returns null for values org.json
+  // parsed as Long — which is exactly what an epoch-ms timestamp like endAt is.
+  // Read the raw value and accept any Number.
   private static long longFrom(PluginCall call, String key, long fallback) {
-    Double d = call.getDouble(key);
-    return d == null ? fallback : d.longValue();
+    Object v = call.getData().opt(key);
+    return v instanceof Number ? ((Number) v).longValue() : fallback;
   }
 }

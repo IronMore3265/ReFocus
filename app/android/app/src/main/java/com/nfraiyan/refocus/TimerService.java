@@ -9,15 +9,16 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.content.res.AssetFileDescriptor;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
@@ -237,24 +238,27 @@ public class TimerService extends Service {
     stopPlayer();
     // The app's own chime (res/raw/chime.wav — the same triad the browser build
     // synthesizes in notify.js), bundled rather than picked, so it always plays
-    // and always sounds like ReFocus.
+    // and always sounds like ReFocus. Opened as a raw file descriptor: the
+    // android.resource:// URI route fails silently on some devices.
     try {
       alarmPlayer = new MediaPlayer();
       alarmPlayer.setAudioAttributes(new AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build());
-      alarmPlayer.setDataSource(this, chimeUri());
+      AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.chime);
+      try {
+        alarmPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+      } finally {
+        afd.close();
+      }
       alarmPlayer.setLooping(true);
       alarmPlayer.prepare();
       alarmPlayer.start();
     } catch (Exception e) {
+      Log.e("TimerService", "alarm chime failed to play", e);
       stopPlayer();
     }
-  }
-
-  private Uri chimeUri() {
-    return Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.chime);
   }
 
   private void vibrate() {
