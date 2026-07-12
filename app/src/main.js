@@ -2,7 +2,6 @@ import './style.css';
 import { getProfile } from './store.js';
 import { tickTimer, onTimerChange, syncFromNative } from './engine.js';
 import { initNotifications } from './notify.js';
-import { stopNativeAlert } from './native/timer-service.js';
 import { initCelebrations } from './celebrate.js';
 import { applyTheme } from './theme.js';
 import { icon, showSheet, avatarEl, closeTopSheet } from './ui.js';
@@ -132,11 +131,12 @@ function openMenu() {
 setInterval(tickTimer, 1000);
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden) return;
-  // While we were away the notification's buttons may have driven the timer, and
-  // an ended session may still be ringing. Reconcile before the tick, or it would
-  // act on a stale state.
+  // While we were away the notification's buttons may have driven the timer.
+  // Reconcile before the tick, or it would act on a stale state. A session that
+  // ended while we were gone is left ringing on purpose: the user is most likely
+  // opening the app *because* it is ringing, and a timer control (or Done) is
+  // what stops it.
   await syncFromNative();
-  stopNativeAlert();
   tickTimer();
 });
 

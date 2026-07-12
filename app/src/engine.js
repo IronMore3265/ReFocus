@@ -2,7 +2,7 @@
 // so it survives app switches, reloads, and the webview being backgrounded.
 import { getSettings, logSession } from './store.js';
 import { completionFeedback } from './notify.js';
-import { syncNativeTimer, getNativeTimer, onNativeTimerEvent } from './native/timer-service.js';
+import { syncNativeTimer, getNativeTimer, onNativeTimerEvent, stopNativeAlert } from './native/timer-service.js';
 
 const KEY = 'fs.timer';
 // The last `rev` we took from the service. It only moves when a notification
@@ -65,8 +65,13 @@ export function phaseProgress(state = getTimer()) {
   return total === 0 ? 0 : 1 - remainingMs(state) / total;
 }
 
+// Touching any control is the user telling us they have heard the alarm — that,
+// and only that, is what stops it ringing. (Merely arriving on a screen is not:
+// the completion screen opens by itself the instant the chime starts, so
+// acknowledging on render would silence it before it made a sound.)
 export function startTimer() {
   const t = getTimer();
+  stopNativeAlert();
   if (t.status === 'running') return t;
   const endAt = Date.now() + remainingMs(t);
   const startedAt = t.startedAt || Date.now();
@@ -75,12 +80,14 @@ export function startTimer() {
 
 export function pauseTimer() {
   const t = getTimer();
+  stopNativeAlert();
   if (t.status !== 'running') return t;
   return setTimer({ ...t, status: 'paused', remainingMs: remainingMs(t), endAt: null });
 }
 
 export function resetTimer() {
   const t = getTimer();
+  stopNativeAlert();
   return setTimer({
     ...t, status: 'idle', endAt: null, startedAt: null,
     remainingMs: phaseDurationMs(t.phase),
@@ -90,6 +97,7 @@ export function resetTimer() {
 // Skip the current phase without logging it.
 export function skipPhase() {
   const t = getTimer();
+  stopNativeAlert();
   const nextPhase = t.phase === 'focus' ? 'break' : 'focus';
   return setTimer({
     ...t, phase: nextPhase, status: 'idle', endAt: null, startedAt: null,

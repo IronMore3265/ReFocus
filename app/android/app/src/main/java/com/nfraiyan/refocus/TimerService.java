@@ -18,6 +18,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -57,13 +58,33 @@ public class TimerService extends Service {
   private Vibrator vibrator;
   private final Handler handler = new Handler(Looper.getMainLooper());
   private final Runnable alertTimeout = this::stopAlert;
-  private boolean alerting = false;
+
+  // Static so the plugin can ask whether anything is actually ringing before it
+  // pokes us: the app now calls stopAlert() on every timer control (that press is
+  // how the user acknowledges the chime), and starting the service just to tell it
+  // to stop a chime it isn't playing would post a foreground notification for a
+  // timer that isn't running. Only ever one Service instance, so a static is safe.
+  private static volatile boolean alerting = false;
+
+  static boolean isAlerting() {
+    return alerting;
+  }
 
   @Override
   public void onCreate() {
     super.onCreate();
-    vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+    vibrator = resolveVibrator();
     createChannels();
+  }
+
+  // VIBRATOR_SERVICE is deprecated from S on, and on devices with more than one
+  // motor it hands back one that may not be the one that buzzes.
+  private Vibrator resolveVibrator() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+      return vm == null ? null : vm.getDefaultVibrator();
+    }
+    return (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
   }
 
   @Override
@@ -82,8 +103,7 @@ public class TimerService extends Service {
 
     switch (action) {
       case ACTION_SYNC:
-        TimerState.fromIntent(intent).save(this);
-        render();
+        onSync(intent);
         break;
       case ACTION_CONTROL:
         applyControl(intent.getStringExtra(EXTRA_CONTROL));
@@ -98,6 +118,35 @@ public class TimerService extends Service {
         break;
     }
     return START_STICKY;
+  }
+
+  // ---------- state pushed at us from JS ----------
+
+  /**
+   * JS mirroring its state onto us. The wrinkle: JS's own 1s heartbeat notices the
+   * phase running out too, and whichever of us sees it first wins the race. When JS
+   * wins, this sync lands as "idle" while our stored state is a phase whose endAt
+   * has just passed — and taking that at face value would cancel the alarm and stop
+   * the service, ending the session in silence. Catch that here and ring instead,
+   * so the alert survives regardless of who got there first.
+   */
+  private void onSync(Intent intent) {
+    TimerState prev = TimerState.load(this);
+    TimerState next = TimerState.fromIntent(intent);
+
+    // Strictly `>= endAt`, with no grace window: a Stop pressed a hair *before* the
+    // phase runs out must stay a stop, not become an alarm.
+    boolean ranOut = "running".equals(prev.status)
+      && prev.endAt > 0
+      && System.currentTimeMillis() >= prev.endAt
+      && !"running".equals(next.status);
+
+    next.save(this);
+    if (ranOut) {
+      cancelAlarm();
+      startAlert(prev); // prev holds the phase that ended — the alert is named for it
+    }
+    render();
   }
 
   // ---------- state transitions driven from the notification ----------
@@ -222,6 +271,10 @@ public class TimerService extends Service {
   // ---------- the end-of-phase alarm ----------
 
   private void startAlert(TimerState s) {
+    // Both the alarm and a JS sync that noticed the phase ended land here; the
+    // first one through does the ringing, the second is a no-op rather than a
+    // restart of the chime from the top.
+    if (alerting) return;
     alerting = true;
     // Swap the foreground notification over to the alert: the service has to stay
     // in the foreground for the loop to keep playing.
@@ -392,6 +445,9 @@ public class TimerService extends Service {
     handler.removeCallbacks(alertTimeout);
     stopPlayer();
     if (vibrator != null) vibrator.cancel();
+    // Torn down mid-chime (a system kill, say) — leave nothing behind claiming we
+    // are still ringing.
+    alerting = false;
     super.onDestroy();
   }
 

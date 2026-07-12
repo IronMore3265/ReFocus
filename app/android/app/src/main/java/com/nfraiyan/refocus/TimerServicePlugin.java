@@ -80,8 +80,13 @@ public class TimerServicePlugin extends Plugin {
 
   @PluginMethod
   public void stopAlert(PluginCall call) {
-    Context ctx = getContext();
-    ctx.startService(new Intent(ctx, TimerService.class).setAction(TimerService.ACTION_STOP_ALERT));
+    // Only reach for the service if it is actually ringing. JS calls this on every
+    // timer control, and starting a stopped service merely to stand down an alarm
+    // that isn't sounding would oblige it to post a notification on the way in.
+    if (TimerService.isAlerting()) {
+      Context ctx = getContext();
+      ctx.startService(new Intent(ctx, TimerService.class).setAction(TimerService.ACTION_STOP_ALERT));
+    }
     call.resolve();
   }
 }
