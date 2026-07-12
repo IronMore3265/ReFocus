@@ -200,6 +200,13 @@ html, body {
 .pb-page-sub { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 
 /* ---------- Components ---------- */
+/* Baseline smoothness for every tappable control; Tailwind transition-*
+   utilities on individual elements still override this where set. */
+button {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+    opacity 0.2s ease, transform 0.2s ease;
+}
+
 .task-checkbox {
   appearance: none;
   width: 20px;
@@ -273,13 +280,36 @@ html, body {
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* ---------- Route view transitions ----------
+   main.js wraps each render in document.startViewTransition() and stamps the
+   direction on <html data-vt="...">: forward (into a sub-page), back (out of
+   one), fade (tab-to-tab). The slide is subtle because the incoming screen's
+   own page-enter/stagger animations still run on top. */
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: 0.22s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+html[data-vt='forward']::view-transition-old(root) { animation-name: vtSlideOutLeft; }
+html[data-vt='forward']::view-transition-new(root) { animation-name: vtSlideInRight; }
+html[data-vt='back']::view-transition-old(root) { animation-name: vtSlideOutRight; }
+html[data-vt='back']::view-transition-new(root) { animation-name: vtSlideInLeft; }
+@keyframes vtSlideOutLeft { to { opacity: 0; transform: translateX(-14px); } }
+@keyframes vtSlideInRight { from { opacity: 0; transform: translateX(14px); } }
+@keyframes vtSlideOutRight { to { opacity: 0; transform: translateX(14px); } }
+@keyframes vtSlideInLeft { from { opacity: 0; transform: translateX(-14px); } }
+
 .modal-backdrop { animation: backdropIn 0.2s ease-out both; }
 @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdropOut { from { opacity: 1; } to { opacity: 0; } }
 /* contain stops a scrolled-to-the-end sheet from chaining into the page behind it */
-.modal-sheet { animation: sheetIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; overscroll-behavior: contain; }
+.modal-sheet { animation: sheetIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; overscroll-behavior: contain; touch-action: pan-y; }
 @keyframes sheetIn {
   from { transform: translateY(48px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+@keyframes sheetOut {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: 0.6; }
 }
 
 /* Pop for FABs and active nav icons */

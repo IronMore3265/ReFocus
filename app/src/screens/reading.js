@@ -80,6 +80,7 @@ export function openAddBook(onDone) {
     <h2 class="text-headline-md text-on-surface mb-4">Add Book</h2>
     <div data-step="search">
       <input data-search type="search" autocomplete="off" class="${inputCls}" placeholder="Search title or author…" />
+      <div data-tabs class="mt-3 hidden flex gap-2"></div>
       <div data-results class="mt-3 flex flex-col gap-2"></div>
       <div data-status class="text-body-sm text-secondary text-center py-3 hidden"></div>
       <button data-goodreads class="w-full py-3 mt-2 rounded-full border border-on-surface text-on-surface text-label-md hidden">Search Goodreads instead</button>
@@ -91,12 +92,19 @@ export function openAddBook(onDone) {
   const searchStep = el.querySelector('[data-step="search"]');
   const formStep = el.querySelector('[data-step="form"]');
   const input = el.querySelector('[data-search]');
+  const tabsEl = el.querySelector('[data-tabs]');
   const resultsEl = el.querySelector('[data-results]');
   const statusEl = el.querySelector('[data-status]');
   const goodreadsBtn = el.querySelector('[data-goodreads]');
   const goodreadsHint = el.querySelector('[data-goodreads-hint]');
 
-  let results = [];
+  const SOURCE_TABS = [
+    { id: 'google', label: 'Google Books' },
+    { id: 'openLibrary', label: 'Open Library' },
+  ];
+  let sourceResults = { google: [], openLibrary: [] };
+  let activeTab = 'google';
+  let results = []; // list currently on screen — data-pick indexes into it
   let searchSeq = 0; // discard responses from stale queries
   let debounceTimer = null;
 
@@ -125,19 +133,58 @@ export function openAddBook(onDone) {
       </button>`).join('');
   };
 
+  const renderTabs = (visible) => {
+    tabsEl.classList.toggle('hidden', !visible);
+    if (!visible) return;
+    tabsEl.innerHTML = SOURCE_TABS.map(({ id, label }) => `
+      <button type="button" data-source-tab="${id}"
+        class="flex-1 py-2 rounded-full border text-label-md transition-colors ${
+          activeTab === id ? 'bg-accent text-on-primary border-transparent' : 'border-surface-container-highest text-secondary'
+        }">${label} (${sourceResults[id].length})</button>`).join('');
+  };
+
+  const showSourceTab = (id) => {
+    activeTab = id;
+    renderTabs(true);
+    renderResults(sourceResults[id]);
+    setStatus(sourceResults[id].length ? '' : 'No matches from this source.');
+  };
+
+  tabsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-source-tab]');
+    if (btn) showSourceTab(btn.getAttribute('data-source-tab'));
+  });
+
+  const clearResults = () => {
+    sourceResults = { google: [], openLibrary: [] };
+    renderTabs(false);
+    renderResults([]);
+  };
+
   const runFreeSearch = async (query) => {
     const seq = ++searchSeq;
     setStatus('Searching…');
     showFallbacks(false);
     try {
-      const list = await searchBooksFree(query);
+      const res = await searchBooksFree(query);
       if (seq !== searchSeq) return;
-      renderResults(list);
-      setStatus(list.length ? '' : 'No matches found.');
+      sourceResults = res;
+      // keep the user's tab unless it came back empty and the other didn't
+      if (!res[activeTab].length) {
+        const other = activeTab === 'google' ? 'openLibrary' : 'google';
+        if (res[other].length) activeTab = other;
+      }
+      if (res.google.length || res.openLibrary.length) {
+        showSourceTab(activeTab);
+      } else {
+        renderTabs(false);
+        renderResults([]);
+        setStatus('No matches found.');
+      }
       showFallbacks(true);
     } catch {
       if (seq !== searchSeq) return;
-      renderResults([]);
+      clearResults();
       setStatus('Search failed — you may be offline. You can still add the book manually.');
     }
   };
@@ -147,7 +194,7 @@ export function openAddBook(onDone) {
     const query = input.value.trim();
     if (query.length < 2) {
       searchSeq++;
-      renderResults([]);
+      clearResults();
       setStatus('');
       showFallbacks(false);
       return;
@@ -159,7 +206,7 @@ export function openAddBook(onDone) {
     const query = input.value.trim();
     if (!query) return;
     const seq = ++searchSeq;
-    renderResults([]);
+    clearResults();
     goodreadsBtn.disabled = true;
     goodreadsBtn.textContent = 'Searching Goodreads…';
     setStatus('Searching Goodreads — this can take up to a minute.');

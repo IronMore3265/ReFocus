@@ -39,7 +39,7 @@ export function render() {
     </div>
 
     <div class="flex flex-col gap-4 stagger">
-      ${statuses.map(({ track, value, level, tier, next, progress }) => `
+      ${statuses.map(({ track, value, level, tier, title, next, nextTitle, progress }) => `
       <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
         <div class="flex items-center gap-4 mb-3">
           ${medal(tier, 'w-14 h-14', track.icon)}
@@ -49,7 +49,10 @@ export function render() {
               <span class="text-label-md px-3 py-1 rounded-full ${tier ? 'text-white' : 'text-secondary bg-surface-container-highest'}"
                 ${tier ? `style="background:${tier.color}"` : ''}>${tier ? tier.name : 'Unranked'}</span>
             </div>
-            <p class="text-body-sm text-secondary mt-0.5">${value} ${track.unit}</p>
+            <p class="text-body-sm mt-0.5">
+              ${title ? `<span class="font-semibold" style="color:${tier.color}">${esc(title)}</span><span class="text-secondary"> · </span>` : ''}
+              <span class="text-secondary">${value} ${track.unit}</span>
+            </p>
           </div>
         </div>
         <div class="w-full h-1.5 bg-surface-container-low rounded-full overflow-hidden mb-2">
@@ -57,7 +60,7 @@ export function render() {
         </div>
         <p class="text-label-sm text-secondary">
           ${next !== null
-            ? `Next: ${TIERS[level].name} at ${next} ${track.unit}`
+            ? `Next: “${esc(nextTitle)}” — ${TIERS[level].name} at ${next} ${track.unit}`
             : 'Diamond — maxed out. Extraordinary.'}
         </p>
       </div>`).join('')}
