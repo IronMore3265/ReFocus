@@ -1,7 +1,7 @@
 // Completion feedback. On device this is all handled natively by TimerService —
 // it holds an exact alarm, so it fires on time even with the app closed, and it
-// loops the chosen ringtone until dismissed. What is left here is the browser
-// fallback (a synthesized chime) plus the notification permission prompt.
+// loops the same chime (res/raw/chime.wav) until Done is pressed. What is left
+// here is the browser fallback plus the notification permission prompt.
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { getSettings } from './store.js';

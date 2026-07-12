@@ -8,11 +8,9 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -50,8 +48,9 @@ public class TimerService extends Service {
   private static final int NOTIF_RUNNING = 1001;
   private static final int NOTIF_ALERT = 1002;
 
-  // Never let a looping alarm run forever if nobody is around to dismiss it.
-  private static final long ALERT_TIMEOUT_MS = 2 * 60 * 1000L;
+  // The chime loops until Done is pressed, but stands itself down after this if
+  // nobody is around to press it.
+  private static final long ALERT_TIMEOUT_MS = 15 * 1000L;
 
   private MediaPlayer alarmPlayer;
   private Vibrator vibrator;
@@ -215,7 +214,7 @@ public class TimerService extends Service {
       .setPriority(NotificationCompat.PRIORITY_MAX)
       .setCategory(NotificationCompat.CATEGORY_ALARM)
       .setFullScreenIntent(openAppIntent(), true)
-      .addAction(0, "Dismiss", servicePendingIntent(ACTION_STOP_ALERT, "dismiss"))
+      .addAction(0, "Done", servicePendingIntent(ACTION_STOP_ALERT, "dismiss"))
       .build();
   }
 
@@ -236,38 +235,26 @@ public class TimerService extends Service {
 
   private void playAlarm() {
     stopPlayer();
-    Uri uri = soundUri();
+    // The app's own chime (res/raw/chime.wav — the same triad the browser build
+    // synthesizes in notify.js), bundled rather than picked, so it always plays
+    // and always sounds like ReFocus.
     try {
       alarmPlayer = new MediaPlayer();
       alarmPlayer.setAudioAttributes(new AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_ALARM)
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build());
-      alarmPlayer.setDataSource(this, uri);
+      alarmPlayer.setDataSource(this, chimeUri());
       alarmPlayer.setLooping(true);
       alarmPlayer.prepare();
       alarmPlayer.start();
     } catch (Exception e) {
-      // A sound picked from the user's own media can sit behind READ_MEDIA_AUDIO,
-      // and a content:// URI can go stale — fall back rather than ring silently.
       stopPlayer();
-      Uri fallback = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-      if (fallback != null && !fallback.equals(uri)) {
-        try {
-          alarmPlayer = new MediaPlayer();
-          alarmPlayer.setAudioAttributes(new AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build());
-          alarmPlayer.setDataSource(this, fallback);
-          alarmPlayer.setLooping(true);
-          alarmPlayer.prepare();
-          alarmPlayer.start();
-        } catch (Exception ignored) {
-          stopPlayer();
-        }
-      }
     }
+  }
+
+  private Uri chimeUri() {
+    return Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.chime);
   }
 
   private void vibrate() {
@@ -303,14 +290,6 @@ public class TimerService extends Service {
     }
     alarmPlayer.release();
     alarmPlayer = null;
-  }
-
-  Uri soundUri() {
-    SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-    String saved = prefs.getString("soundUri", null);
-    if (saved != null) return Uri.parse(saved);
-    Uri alarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-    return alarm != null ? alarm : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
   }
 
   // ---------- alarms ----------
@@ -390,8 +369,8 @@ public class TimerService extends Service {
     NotificationChannel alert = new NotificationChannel(
       CHANNEL_ALERT, "Timer alerts", NotificationManager.IMPORTANCE_HIGH);
     alert.setDescription("Fires when a focus session or break ends");
-    // The service plays the chosen sound itself (channel sound is immutable once
-    // created, so it could never follow the user's pick), and vibrates itself.
+    // The service loops the chime and vibrates itself; a channel sound would only
+    // play once, and over the top of ours.
     alert.setSound(null, null);
     alert.enableVibration(false);
     alert.enableLights(true);
