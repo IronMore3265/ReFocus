@@ -4,7 +4,7 @@ import { tickTimer, onTimerChange } from './engine.js';
 import { initNotifications } from './notify.js';
 import { initCelebrations } from './celebrate.js';
 import { applyTheme } from './theme.js';
-import { icon, showSheet, avatarEl } from './ui.js';
+import { icon, showSheet, avatarEl, closeTopSheet } from './ui.js';
 
 import * as home from './screens/home.js';
 import * as timer from './screens/timer.js';
@@ -48,6 +48,10 @@ export function navigate(hash) {
   else location.hash = hash;
 }
 
+// Tabs sit at depth 0, sub-pages at depth 1 — used to pick a slide direction.
+const TAB_RE = /^#\/(home|timer|reading|tasks)$/;
+let prevHash = null;
+
 function render() {
   const hash = location.hash || '#/home';
 
@@ -64,12 +68,27 @@ function render() {
   }
   const params = hash.match(match.pattern).slice(1);
 
-  if (cleanup) { cleanup(); cleanup = null; }
-  window.scrollTo(0, 0);
-  document.body.className =
-    `bg-surface text-on-surface antialiased${match.accent ? ` accent-${match.accent}` : ''}`;
-  root.innerHTML = match.screen.render(...params);
-  if (match.screen.mount) cleanup = match.screen.mount(root, ...params) || null;
+  const apply = () => {
+    if (cleanup) { cleanup(); cleanup = null; }
+    window.scrollTo(0, 0);
+    document.body.className =
+      `bg-surface text-on-surface antialiased${match.accent ? ` accent-${match.accent}` : ''}`;
+    root.innerHTML = match.screen.render(...params);
+    if (match.screen.mount) cleanup = match.screen.mount(root, ...params) || null;
+  };
+
+  // Cross-fade/slide between routes when the WebView supports view transitions.
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (document.startViewTransition && prevHash !== null && prevHash !== hash && !reduceMotion) {
+    const fromDepth = TAB_RE.test(prevHash) ? 0 : 1;
+    const toDepth = TAB_RE.test(hash) ? 0 : 1;
+    document.documentElement.dataset.vt =
+      toDepth > fromDepth ? 'forward' : toDepth < fromDepth ? 'back' : 'fade';
+    document.startViewTransition(apply);
+  } else {
+    apply();
+  }
+  prevHash = hash;
 }
 
 // ---------- global navigation delegation ----------
@@ -119,12 +138,16 @@ onTimerChange((event) => {
 });
 
 // ---------- Android hardware back button ----------
+// Priority: dismiss an open sheet → step back through history → only exit
+// the app from the home tab.
 import('@capacitor/app')
   .then(({ App }) => {
     App.addListener('backButton', ({ canGoBack }) => {
-      const tab = /^#\/(home|timer|reading|tasks)$/.test(location.hash);
-      if (tab || !canGoBack) App.exitApp();
-      else history.back();
+      if (closeTopSheet()) return;
+      const hash = location.hash || '#/home';
+      if (hash === '#/home' || hash === '#/onboarding') App.exitApp();
+      else if (canGoBack) history.back();
+      else navigate('#/home');
     });
   })
   .catch(() => { /* plugin absent on web — fine */ });

@@ -1,28 +1,22 @@
-// Book search — free keyless APIs (Google Books + Open Library) with an
-// optional Goodreads fallback via an Apify actor (user supplies their own token).
+// Book search — free APIs (Google Books + Open Library) with an optional
+// Goodreads fallback via an Apify actor (user supplies their own token).
 // Every source is mapped to one shape:
 //   { title, author, synopsis, totalPages, coverUrl, source }
 
-const GOODREADS_ACTOR = 'thescrapelab~Apify-Goodreads-Scraper';
+const GOODREADS_ACTOR = 'shahidirfan~Goodreads-Book-Scraper';
 
-// Google Books key — raises the free quota for cover/synopsis lookups. Baked
-// into the bundle (not surfaced anywhere in the UI, unlike the user-supplied
-// Apify token in Settings); it only unlocks read-only volume search.
-const GOOGLE_BOOKS_KEY = 'AIzaSyA5-0m9LR17wEPToidsbXpECtA6M4lZ28Q';
-
-// Dedupe key: lowercase alphanumerics only, but keep Bengali script so
-// Bangla titles don't all collapse to the same empty key.
-function dedupeKey(b) {
-  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9ঀ-৿]+/g, '');
-  return `${norm(b.title)}|${norm(b.author)}`;
-}
+// Google Books key — raises the free quota for cover/synopsis lookups. Lives
+// in gitignored app/.env (Vite inlines it at build time); search still works
+// keyless when the var is absent, just with a lower shared quota.
+const GOOGLE_BOOKS_KEY = import.meta.env.VITE_GOOGLE_BOOKS_KEY || '';
 
 function pick(...vals) {
   return vals.find((v) => v !== undefined && v !== null && v !== '') ?? null;
 }
 
 async function searchGoogle(query) {
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books&key=${GOOGLE_BOOKS_KEY}`;
+  const key = GOOGLE_BOOKS_KEY ? `&key=${GOOGLE_BOOKS_KEY}` : '';
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books${key}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Google Books HTTP ${res.status}`);
   const data = await res.json();
@@ -56,20 +50,15 @@ async function searchOpenLibrary(query) {
   })).filter((b) => b.title);
 }
 
-// Both sources in parallel; Google results first (richer synopses), Open
-// Library fills in what Google missed. Throws only if BOTH fail (offline).
+// Both sources in parallel, kept separate so the UI can tab between them.
+// Throws only if BOTH fail (offline).
 export async function searchBooksFree(query) {
   const [g, o] = await Promise.allSettled([searchGoogle(query), searchOpenLibrary(query)]);
   if (g.status === 'rejected' && o.status === 'rejected') throw g.reason;
-  const out = g.status === 'fulfilled' ? [...g.value] : [];
-  const seen = new Set(out.map(dedupeKey));
-  for (const b of o.status === 'fulfilled' ? o.value : []) {
-    const key = dedupeKey(b);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(b);
-  }
-  return out;
+  return {
+    google: g.status === 'fulfilled' ? g.value : [],
+    openLibrary: o.status === 'fulfilled' ? o.value : [],
+  };
 }
 
 // Goodreads via Apify's synchronous run endpoint: one POST that starts the
@@ -84,17 +73,16 @@ export async function searchGoodreads(query, token) {
       headers: { 'Content-Type': 'application/json' },
       signal: ctrl.signal,
       body: JSON.stringify({
-        targets: [query],
-        searchMode: 'books',
-        depth: 'shallow',
-        maxSearchResultsPerQuery: 6,
-        maxItems: 6,
+        startUrls: [{ url: `https://www.goodreads.com/search?q=${encodeURIComponent(query)}` }],
+        results_wanted: 6,
+        max_pages: 1,
       }),
     });
     if (res.status === 401 || res.status === 403) throw new Error('Apify token was rejected — check it in Settings.');
     if (!res.ok) throw new Error(`Goodreads search failed (HTTP ${res.status})`);
     const items = await res.json();
-    // Field names vary between scraper versions, so probe common aliases.
+    // Documented schema: title, author, description, pages, image — but probe
+    // aliases anyway since scraper output shapes drift between versions.
     return (Array.isArray(items) ? items : []).map((it) => ({
       title: pick(it.title, it.bookTitle, it.name) || '',
       author: typeof it.author === 'object'
@@ -102,7 +90,7 @@ export async function searchGoodreads(query, token) {
         : pick(it.author, (it.authors || []).map((a) => a?.name || a).join(', ')) || '',
       synopsis: pick(it.description, it.synopsis, it.summary) || '',
       totalPages: Number(pick(it.pages, it.numPages, it.pageCount, it.numberOfPages)) || 0,
-      coverUrl: pick(it.coverImage, it.imageUrl, it.image, it.cover, it.coverUrl),
+      coverUrl: pick(it.image, it.coverImage, it.imageUrl, it.cover, it.coverUrl),
       source: 'Goodreads',
     })).filter((b) => b.title);
   } finally {

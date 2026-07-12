@@ -83,7 +83,7 @@ export function bottomNav(activeRoute) {
       ${TABS.map((t) => {
         const active = t.route === activeRoute;
         return `
-        <button data-nav="${t.route}" class="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform duration-200 ${
+        <button data-nav="${t.route}" class="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-[transform,color] duration-200 ${
           active ? 'text-accent-soft font-bold' : 'text-secondary'
         }">
           ${icon(t.iconName, `mb-1 ${active ? 'pop-in' : ''}`, active)}
@@ -146,7 +146,20 @@ export function emptyState(iconName, title, hint) {
 }
 
 // ---------- modal bottom sheet ----------
-// showSheet(innerHtml) → returns {el, close}. Buttons with data-close dismiss it.
+// Open sheets, top-most last — lets the Android back button pop them in order.
+const openSheets = [];
+
+// Closes the top-most open sheet (with its exit animation). Returns whether
+// there was one — the back-button handler uses this to decide what back means.
+export function closeTopSheet() {
+  const top = openSheets[openSheets.length - 1];
+  if (!top) return false;
+  top();
+  return true;
+}
+
+// showSheet(innerHtml) → returns {el, close}. Buttons with data-close dismiss
+// it; so do a backdrop tap, a downward swipe, and the hardware back button.
 export function showSheet(innerHtml) {
   const wrap = document.createElement('div');
   wrap.className = 'fixed inset-0 z-50 flex items-end justify-center';
@@ -158,10 +171,77 @@ export function showSheet(innerHtml) {
       <div class="h-4"></div>
     </div>`;
   document.body.appendChild(wrap);
-  const close = () => wrap.remove();
+
+  const sheet = wrap.querySelector('.modal-sheet');
+  const backdrop = wrap.querySelector('.modal-backdrop');
+  let closed = false;
+
+  const remove = () => {
+    wrap.remove();
+    const i = openSheets.indexOf(close);
+    if (i !== -1) openSheets.splice(i, 1);
+  };
+
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    sheet.style.transition = 'none';
+    sheet.style.animation = 'sheetOut 0.25s cubic-bezier(0.4, 0, 1, 1) both';
+    backdrop.style.animation = 'backdropOut 0.25s ease-out both';
+    setTimeout(remove, 250);
+  };
+  openSheets.push(close);
+
   wrap.addEventListener('click', (e) => {
     if (e.target.closest('[data-close]')) close();
   });
+
+  // --- swipe down to dismiss ---
+  // Only when the sheet is scrolled to the top and the touch doesn't start
+  // inside a nested scroller (the date/time wheel columns scroll themselves).
+  let startY = null;
+  let startT = 0;
+  let dragging = false;
+
+  sheet.addEventListener('touchstart', (e) => {
+    startY = null;
+    if (closed || sheet.scrollTop > 0) return;
+    if (e.target.closest('.wheel-column')) return;
+    startY = e.touches[0].clientY;
+    startT = Date.now();
+    dragging = false;
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', (e) => {
+    if (startY === null || closed) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0 && !dragging) { startY = null; return; } // upward — let it scroll
+    dragging = true;
+    sheet.style.transition = 'none';
+    sheet.style.transform = `translateY(${Math.max(0, dy)}px)`;
+    e.preventDefault();
+  }, { passive: false });
+
+  const endDrag = (e) => {
+    if (startY === null || closed || !dragging) { startY = null; return; }
+    const dy = e.changedTouches[0].clientY - startY;
+    const dt = Date.now() - startT;
+    startY = null;
+    const flick = dy > 60 && dt < 300;
+    if (dy > sheet.offsetHeight * 0.25 || flick) {
+      closed = true;
+      sheet.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 1, 1)';
+      sheet.style.transform = 'translateY(110%)';
+      backdrop.style.animation = 'backdropOut 0.2s ease-out both';
+      setTimeout(remove, 200);
+    } else {
+      sheet.style.transition = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)';
+      sheet.style.transform = 'translateY(0)';
+    }
+  };
+  sheet.addEventListener('touchend', endDrag);
+  sheet.addEventListener('touchcancel', endDrag);
+
   return { el: wrap, close };
 }
 

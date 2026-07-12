@@ -333,49 +333,59 @@ export function longestStreak() {
   return best;
 }
 
+// Each track pairs a threshold with a title per tier (Bronze → Diamond).
 export const ACHIEVEMENT_TRACKS = [
   {
     id: 'sessions', icon: 'timer', title: 'Focus Sessions', unit: 'sessions',
     thresholds: [5, 25, 60, 120, 250, 500, 1000],
+    titles: ['First Focus', 'Getting Steady', 'Session Regular', 'Focus Fixture', 'Century Mind', 'Relentless', 'Unshakable'],
     metric: () => getSessions().length,
   },
   {
     id: 'hours', icon: 'schedule', title: 'Focus Hours', unit: 'hours',
     thresholds: [3, 15, 40, 100, 250, 600, 1200],
+    titles: ['Warmed Up', 'Deep Diver', 'Hour Collector', 'Time Sculptor', 'Flow Master', 'Marathon Mind', 'Keeper of Hours'],
     metric: () => Math.floor(getSessions().reduce((s, x) => s + x.minutes, 0) / 60),
   },
   {
     id: 'streak', icon: 'local_fire_department', title: 'Best Streak', unit: 'days',
     thresholds: [5, 14, 30, 60, 120, 250, 500],
+    titles: ['Spark', 'Week Walker', 'Month of Fire', 'Habit Forged', 'Season of Focus', 'Unbroken', 'Eternal Flame'],
     metric: longestStreak,
   },
   {
     id: 'tasks', icon: 'task_alt', title: 'Tasks Completed', unit: 'tasks',
     thresholds: [15, 60, 150, 300, 600, 1200, 2000],
+    titles: ['List Starter', 'Box Checker', 'Task Tamer', 'Steady Finisher', 'Execution Engine', 'Master of Done', 'Legend of Lists'],
     metric: () => getTasks().filter((t) => t.done).length,
   },
   {
     id: 'pages', icon: 'auto_stories', title: 'Pages Read', unit: 'pages',
     thresholds: [150, 500, 1200, 2500, 5000, 10000, 20000],
+    titles: ['Page Turner', 'Chapter Chaser', 'Bookworm', 'Story Devourer', 'Tome Traveler', 'Sage of Pages', 'Living Library'],
     metric: () => getReadingLog().reduce((sum, r) => sum + (r.to - r.from), 0),
   },
   {
     id: 'books', icon: 'collections_bookmark', title: 'Books Finished', unit: 'books',
     thresholds: [3, 8, 15, 30, 60, 100, 200],
+    titles: ['First Finish', 'Shelf Builder', 'Book Collector', 'Reading Machine', 'Bibliophile', 'Curator', 'Grand Librarian'],
     metric: () => finishedBooks().length,
   },
 ];
 
-// → { track, value, level (0..7), tier (TIERS entry | null), next (threshold | null), progress (0..1 toward next) }
+// → { track, value, level (0..7), tier (TIERS entry | null), title (earned | null),
+//     next (threshold | null), nextTitle (title | null), progress (0..1 toward next) }
 export function trackStatus(track) {
   const value = track.metric();
   let level = 0;
   while (level < track.thresholds.length && value >= track.thresholds[level]) level++;
   const tier = level > 0 ? TIERS[level - 1] : null;
+  const title = level > 0 ? track.titles[level - 1] : null;
   const next = level < track.thresholds.length ? track.thresholds[level] : null;
+  const nextTitle = next !== null ? track.titles[level] : null;
   const prev = level > 0 ? track.thresholds[level - 1] : 0;
   const progress = next === null ? 1 : Math.min(1, (value - prev) / (next - prev));
-  return { track, value, level, tier, next, progress };
+  return { track, value, level, tier, title, next, nextTitle, progress };
 }
 
 export function allTrackStatuses() {

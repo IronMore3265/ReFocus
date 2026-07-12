@@ -16,7 +16,7 @@ let showing = false;
 function showNext() {
   if (showing || !queue.length) return;
   showing = true;
-  const { tier, track } = queue.shift();
+  const { tier, track, title } = queue.shift();
 
   const confetti = Array.from({ length: 28 }, (_, i) => {
     const color = TIERS[i % TIERS.length].color;
@@ -34,7 +34,7 @@ function showNext() {
         style="--color-accent:${tier.color}; background:linear-gradient(145deg, ${tier.color}, color-mix(in srgb, ${tier.color} 55%, #000)); box-shadow:0 8px 28px color-mix(in srgb, ${tier.color} 50%, transparent)">
         <span class="material-symbols-outlined icon-fill text-white text-[56px]">trophy</span>
       </div>
-      <h2 class="text-headline-lg-mobile text-white font-bold mb-1">Achievement Unlocked!</h2>
+      <h2 class="text-headline-lg-mobile text-white font-bold mb-1">${esc(title)}</h2>
       <p class="text-body-lg text-white/85">${esc(tier.name)} · ${esc(track.title)}</p>
       <p class="text-label-sm text-white/60 uppercase tracking-wider mt-4">Tap to continue</p>
     </div>`;
@@ -61,7 +61,7 @@ function checkAchievements() {
   for (const { track, level } of allTrackStatuses()) {
     const prev = seen[track.id] || 0;
     for (let lvl = prev + 1; lvl <= level; lvl++) {
-      queue.push({ tier: TIERS[lvl - 1], track });
+      queue.push({ tier: TIERS[lvl - 1], track, title: track.titles[lvl - 1] });
       changed = true;
     }
   }
