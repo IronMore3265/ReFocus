@@ -21,7 +21,7 @@ export function render() {
   const todayIdx = week.findIndex((d) => d.day === today);
 
   return `
-  ${subHeader('Focus Dashboard')}
+  ${subHeader('Focus Stats')}
   <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter flex flex-col gap-gutter stagger">
 
     <div class="grid grid-cols-2 gap-gutter">

@@ -24,7 +24,7 @@ export function render() {
       <button data-action="change-pic" class="w-24 h-24 rounded-full bg-accent flex items-center justify-center mb-4 relative overflow-hidden group">
         ${avatarHtml}
         <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          ${icon('edit', 'text-white')}
+          ${icon('edit', 'text-white text-[16px]')}
         </div>
       </button>
       <div class="flex items-center gap-1 max-w-xs">
@@ -32,7 +32,7 @@ export function render() {
           class="${inputCls} !bg-transparent !border-transparent text-center !text-2xl font-semibold focus:!border-surface-container-highest" />
         <button data-action="edit-name" aria-label="Edit name"
           class="shrink-0 p-2 rounded-full text-secondary active:opacity-70 transition-opacity">
-          ${icon('edit', 'text-[18px]')}
+          ${icon('edit', 'text-[16px]')}
         </button>
       </div>
     </div>

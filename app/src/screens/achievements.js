@@ -27,14 +27,14 @@ export function render() {
   <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
 
     <div class="flex items-center justify-between mb-stack-sm">
-      <p class="text-body-md text-secondary">${totalLevels} of ${maxLevels} tiers earned</p>
+      <p class="text-body-md text-secondary">${totalLevels} of ${maxLevels} achievements unlocked</p>
     </div>
 
     <!-- Tier ladder legend -->
-    <div class="flex justify-between items-center bg-surface-container-lowest border border-surface-container-high rounded-xl px-4 py-3 mb-stack-md overflow-x-auto gap-2">
+    <div class="flex items-center bg-surface-container-lowest border border-surface-container-high rounded-xl px-4 py-3 mb-stack-md overflow-x-auto gap-4">
       ${TIERS.map((t) => `
-      <div class="flex flex-col items-center gap-1 min-w-[44px]">
-        <div class="w-5 h-5 rounded-full" style="background:linear-gradient(145deg, ${t.color}, color-mix(in srgb, ${t.color} 55%, #000))"></div>
+      <div class="flex flex-col items-center gap-1 shrink-0 min-w-[48px] flex-1">
+        <span class="material-symbols-outlined icon-fill text-[20px]" style="color:${t.color}">trophy</span>
         <span class="text-label-sm text-secondary">${t.name}</span>
       </div>`).join('')}
     </div>

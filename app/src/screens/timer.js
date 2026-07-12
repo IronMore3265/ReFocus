@@ -1,10 +1,13 @@
 // Pomodoro timer tab — ported from stitch pomodoro_timer/code.html
-import { getSettings, setSettings } from '../store.js';
+import { getSettings, setSettings, addPreset } from '../store.js';
 import {
   getTimer, startTimer, pauseTimer, resetTimer, skipPhase,
   remainingMs, phaseProgress, onTimerChange, fmtClock, refreshIdleTimer,
 } from '../engine.js';
-import { appHeader, bottomNav, icon, progressRing, setRingProgress, showSheet, field, inputCls, primaryBtn } from '../ui.js';
+import {
+  appHeader, bottomNav, icon, progressRing, setRingProgress, showSheet, inputCls, primaryBtn,
+  stepperRow, bindSteppers, setStepperValue, mountPresetChips,
+} from '../ui.js';
 
 function centerHtml(t) {
   return `
@@ -65,20 +68,49 @@ function openOptions() {
   const s = getSettings();
   const { el, close } = showSheet(`
     <h2 class="text-headline-md text-on-surface mb-4">Timer Options</h2>
-    <form data-form>
-      ${field('Focus length (minutes)', `<input name="focusMin" type="number" min="1" max="180" value="${s.focusMin}" class="${inputCls}" />`)}
-      ${field('Break length (minutes)', `<input name="breakMin" type="number" min="1" max="60" value="${s.breakMin}" class="${inputCls}" />`)}
-      ${field('Sessions per round', `<input name="sessionsPerRound" type="number" min="1" max="12" value="${s.sessionsPerRound}" class="${inputCls}" />`)}
-      ${primaryBtn('Save', 'type="submit"')}
-    </form>`);
-  el.querySelector('[data-form]').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const f = new FormData(e.target);
-    setSettings({
-      focusMin: Math.max(1, Number(f.get('focusMin')) || 25),
-      breakMin: Math.max(1, Number(f.get('breakMin')) || 5),
-      sessionsPerRound: Math.max(1, Number(f.get('sessionsPerRound')) || 4),
-    });
+    <span class="text-label-md uppercase tracking-wider text-secondary block mb-2">Presets</span>
+    <div data-presets class="mb-3"></div>
+    ${stepperRow('Focus length', 'focusMin', s.focusMin, { min: 1, max: 180, step: 5 })}
+    ${stepperRow('Break length', 'breakMin', s.breakMin, { min: 1, max: 60 })}
+    ${stepperRow('Sessions per round', 'sessionsPerRound', s.sessionsPerRound, { min: 1, max: 12, unit: '' })}
+    <button type="button" data-action="save-preset" class="w-full py-3 text-label-md text-accent-soft flex items-center justify-center gap-2 active:opacity-70 transition-opacity">
+      ${icon('bookmark_add', 'text-[18px]')} Save current as preset
+    </button>
+    <div data-preset-name-row class="hidden flex gap-2 mb-3">
+      <input data-preset-name placeholder="Preset name" class="${inputCls} flex-1" />
+      <button type="button" data-action="add-preset" class="px-5 rounded-lg bg-accent text-on-primary text-label-md">Add</button>
+    </div>
+    ${primaryBtn('Save', 'data-action="save-options"')}`);
+
+  const values = { focusMin: s.focusMin, breakMin: s.breakMin, sessionsPerRound: s.sessionsPerRound };
+  const redrawChips = mountPresetChips(el.querySelector('[data-presets]'), {
+    getCurrent: () => values,
+    onApply: (p) => {
+      Object.assign(values, { focusMin: p.focusMin, breakMin: p.breakMin, sessionsPerRound: p.sessionsPerRound });
+      Object.keys(values).forEach((k) => setStepperValue(el, k, values[k]));
+    },
+  });
+  bindSteppers(el, (key, v) => {
+    values[key] = v;
+    redrawChips();
+  });
+
+  const nameRow = el.querySelector('[data-preset-name-row]');
+  const nameInput = el.querySelector('[data-preset-name]');
+  el.querySelector('[data-action="save-preset"]').addEventListener('click', () => {
+    nameRow.classList.toggle('hidden');
+    if (!nameRow.classList.contains('hidden')) nameInput.focus();
+  });
+  el.querySelector('[data-action="add-preset"]').addEventListener('click', () => {
+    const name = nameInput.value.trim() || `${values.focusMin}/${values.breakMin}`;
+    addPreset({ name, ...values });
+    nameInput.value = '';
+    nameRow.classList.add('hidden');
+    redrawChips();
+  });
+
+  el.querySelector('[data-action="save-options"]').addEventListener('click', () => {
+    setSettings(values);
     refreshIdleTimer();
     close();
     document.dispatchEvent(new CustomEvent('rerender-screen'));

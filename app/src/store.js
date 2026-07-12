@@ -13,6 +13,8 @@ function load(key, fallback) {
 
 function save(key, value) {
   localStorage.setItem(PREFIX + key, JSON.stringify(value));
+  // Anything watching derived state (e.g. achievement unlocks) listens here.
+  window.dispatchEvent(new CustomEvent('fs:changed', { detail: { key } }));
 }
 
 export function uid() {
@@ -84,6 +86,28 @@ export function setSettings(patch) {
   save('settings', { ...getSettings(), ...patch });
 }
 
+// ---------- timer presets ----------
+// preset: { id, name, focusMin, breakMin, sessionsPerRound, custom? }
+// Built-ins are constants (not stored, not deletable); user presets persist under fs.presets.
+export const BUILTIN_PRESETS = [
+  { id: 'classic', name: 'Classic', focusMin: 25, breakMin: 5, sessionsPerRound: 4 },
+  { id: 'deep', name: 'Deep Work', focusMin: 50, breakMin: 10, sessionsPerRound: 2 },
+  { id: 'quick', name: 'Quick', focusMin: 15, breakMin: 3, sessionsPerRound: 4 },
+];
+export function getPresets() {
+  return [...BUILTIN_PRESETS, ...load('presets', [])];
+}
+export function addPreset({ name, focusMin, breakMin, sessionsPerRound }) {
+  const custom = load('presets', []);
+  const preset = { id: uid(), name, focusMin, breakMin, sessionsPerRound, custom: true };
+  custom.push(preset);
+  save('presets', custom);
+  return preset;
+}
+export function deletePreset(id) {
+  save('presets', load('presets', []).filter((p) => p.id !== id));
+}
+
 export function getProfile() {
   return { name: '', picture: '', onboarded: false, ...load('profile', {}) };
 }
@@ -91,8 +115,18 @@ export function setProfile(patch) {
   save('profile', { ...getProfile(), ...patch });
 }
 
+// Apify API token — lets book search fall back to the Goodreads scraper.
+export function getApifyToken() {
+  return load('apifyToken', '');
+}
+export function setApifyToken(token) {
+  if (!token) localStorage.removeItem(PREFIX + 'apifyToken');
+  else save('apifyToken', token);
+}
+
 // ---------- books ----------
-// book: { id, title, author, totalPages, currentPage, notes: [{id, text, page, at}],
+// book: { id, title, author, totalPages, currentPage, cover (data URI/URL | null),
+//         synopsis, notes: [{id, text, page, at}],
 //         finished: bool, finishedAt, createdAt, updatedAt }
 export function getBooks() {
   return load('books', []);
@@ -103,11 +137,11 @@ function saveBooks(books) {
 export function getBook(id) {
   return getBooks().find((b) => b.id === id);
 }
-export function addBook({ title, author, totalPages, currentPage = 0 }) {
+export function addBook({ title, author, totalPages, currentPage = 0, cover = null, synopsis = '' }) {
   const books = getBooks();
   const book = {
     id: uid(), title, author, totalPages: Number(totalPages) || 0,
-    currentPage: Number(currentPage) || 0, notes: [], finished: false,
+    currentPage: Number(currentPage) || 0, cover, synopsis, notes: [], finished: false,
     finishedAt: null, createdAt: Date.now(), updatedAt: Date.now(),
   };
   books.push(book);
@@ -272,13 +306,13 @@ export function weeklyActivity() {
 // Every track levels up through the same 7 tiers; each tier has its own
 // threshold per track. Level 0 = unranked.
 export const TIERS = [
-  { id: 'bronze', name: 'Bronze', color: '#cd7f32' },
-  { id: 'silver', name: 'Silver', color: '#8e9aa3' },
-  { id: 'gold', name: 'Gold', color: '#d4a017' },
-  { id: 'pearl', name: 'Pearl', color: '#c9a9c8' },
-  { id: 'ruby', name: 'Ruby', color: '#e0115f' },
-  { id: 'sapphire', name: 'Sapphire', color: '#2159c4' },
-  { id: 'diamond', name: 'Diamond', color: '#3ec6dd' },
+  { id: 'bronze', name: 'Bronze', color: '#e07b39' },
+  { id: 'silver', name: 'Silver', color: '#a8b8c8' },
+  { id: 'gold', name: 'Gold', color: '#f5b301' },
+  { id: 'pearl', name: 'Pearl', color: '#d98ad9' },
+  { id: 'ruby', name: 'Ruby', color: '#f0125f' },
+  { id: 'sapphire', name: 'Sapphire', color: '#2563eb' },
+  { id: 'diamond', name: 'Diamond', color: '#22d3ee' },
 ];
 
 // Longest run of consecutive days with at least one focus session.
@@ -348,6 +382,18 @@ export function allTrackStatuses() {
   return ACHIEVEMENT_TRACKS.map(trackStatus);
 }
 
+// Snapshot of per-track levels the user has already been congratulated for —
+// celebrate.js compares against it to detect fresh unlocks.
+export function currentAchievementLevels() {
+  return Object.fromEntries(allTrackStatuses().map(({ track, level }) => [track.id, level]));
+}
+export function getSeenAchievementLevels() {
+  return load('achievementLevels', null);
+}
+export function setSeenAchievementLevels(levels) {
+  save('achievementLevels', levels);
+}
+
 // ---------- lifetime totals (profile page) ----------
 export function lifetimeStats() {
   const sessions = getSessions();
@@ -358,6 +404,20 @@ export function lifetimeStats() {
     booksFinished: finishedBooks().length,
     pagesRead: getReadingLog().reduce((sum, r) => sum + (r.to - r.from), 0),
   };
+}
+
+// Full restore used by CSV import — wipes fs.* then writes the given collections.
+// Reseeds the achievement snapshot so restored progress doesn't fire a celebration storm.
+export function restoreAll({ books = [], tasks = [], sessions = [], readingLog = [], presets = [], settings = [], profile = [] } = {}) {
+  resetAllData();
+  save('books', books);
+  save('tasks', tasks);
+  save('sessions', sessions);
+  save('readingLog', readingLog);
+  save('presets', presets);
+  if (settings[0]) save('settings', settings[0]);
+  save('profile', { ...getProfile(), ...(profile[0] || {}), onboarded: true });
+  setSeenAchievementLevels(currentAchievementLevels());
 }
 
 // ---------- danger zone ----------

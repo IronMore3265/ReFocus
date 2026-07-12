@@ -1,5 +1,5 @@
 // Shared UI building blocks, styled per the Ember Serenity design system.
-import { formatDate, getProfile, currentStreak, dayKey } from './store.js';
+import { formatDate, getProfile, currentStreak, dayKey, getPresets, deletePreset } from './store.js';
 
 // Re-render the current route (main.js re-renders on hashchange)
 export function rerender() {
@@ -21,7 +21,7 @@ export function esc(s) {
 export function avatarEl(sizeCls = 'w-8 h-8') {
   const p = getProfile();
   if (p.picture) {
-    return `<img src="${esc(p.picture)}" alt="" class="${sizeCls} rounded-full object-cover bg-surface-container" />`;
+    return `<img src="${esc(p.picture)}" alt="" class="${sizeCls} rounded-full object-cover bg-accent" />`;
   }
   if (p.name) {
     return `<span class="${sizeCls} rounded-full bg-accent text-on-primary flex items-center justify-center text-label-md font-bold">${esc(p.name[0].toUpperCase())}</span>`;
@@ -194,6 +194,104 @@ export const inputCls =
 
 export function primaryBtn(label, attrs = '') {
   return `<button ${attrs} class="w-full py-4 rounded-full bg-accent text-on-primary text-label-md active:scale-[0.98] transition-transform">${esc(label)}</button>`;
+}
+
+// ---------- duration stepper ----------
+// [−] value unit [+] row; the value is still an input so typing works as a fallback.
+export function stepperRow(label, key, value, { min, max, step = 1, unit = 'min' } = {}) {
+  const stepBtn = (dir, iconName) => `
+    <button type="button" data-step-dir="${dir}" aria-label="${dir > 0 ? 'Increase' : 'Decrease'} ${esc(label)}"
+      class="w-10 h-10 shrink-0 rounded-full border border-surface-container-highest text-on-surface flex items-center justify-center active:scale-90 transition-transform">
+      ${icon(iconName, 'text-[20px]')}
+    </button>`;
+  return `
+  <div class="flex items-center justify-between gap-3 py-3 border-b border-surface-container"
+    data-stepper="${key}" data-min="${min}" data-max="${max}" data-step="${step}">
+    <span class="text-body-md text-on-surface">${esc(label)}</span>
+    <div class="flex items-center gap-1">
+      ${stepBtn(-1, 'remove')}
+      <div class="w-14 flex flex-col items-center">
+        <input data-step-value type="number" min="${min}" max="${max}" value="${value}"
+          class="w-full bg-transparent text-center text-body-lg font-bold text-on-surface focus:outline-none" />
+        ${unit ? `<span class="text-label-sm text-secondary -mt-1">${esc(unit)}</span>` : ''}
+      </div>
+      ${stepBtn(1, 'add')}
+    </div>
+  </div>`;
+}
+
+// Wires every stepperRow() inside `scope`; onChange(key, value) fires on each change.
+export function bindSteppers(scope, onChange) {
+  scope.querySelectorAll('[data-stepper]').forEach((row) => {
+    const key = row.getAttribute('data-stepper');
+    const min = Number(row.getAttribute('data-min'));
+    const max = Number(row.getAttribute('data-max'));
+    const step = Number(row.getAttribute('data-step'));
+    const input = row.querySelector('[data-step-value]');
+    const clamp = (v) => Math.min(max, Math.max(min, v));
+    const commit = (v) => {
+      input.value = v;
+      onChange(key, v);
+    };
+    row.querySelectorAll('[data-step-dir]').forEach((btn) => {
+      const dir = Number(btn.getAttribute('data-step-dir'));
+      btn.addEventListener('click', () => {
+        // snap to the next multiple of step (27 → 30 / 25) instead of blind adding
+        const cur = clamp(Number(input.value) || min);
+        const next = dir > 0 ? Math.floor(cur / step) * step + step : Math.ceil(cur / step) * step - step;
+        commit(clamp(next));
+      });
+    });
+    input.addEventListener('change', () => commit(clamp(Number(input.value) || min)));
+  });
+}
+
+export function setStepperValue(scope, key, v) {
+  const input = scope.querySelector(`[data-stepper="${key}"] [data-step-value]`);
+  if (input) input.value = v;
+}
+
+// ---------- timer preset chips ----------
+// Renders tappable preset chips into `container` and keeps them in sync.
+// getCurrent() → {focusMin, breakMin, sessionsPerRound} decides the highlighted chip;
+// onApply(preset) fires on tap. Returns a redraw function for callers to invoke
+// when the current values change elsewhere (e.g. a stepper tap).
+export function mountPresetChips(container, { getCurrent, onApply }) {
+  const draw = () => {
+    const cur = getCurrent();
+    const active = (p) => p.focusMin === cur.focusMin && p.breakMin === cur.breakMin
+      && p.sessionsPerRound === cur.sessionsPerRound;
+    container.innerHTML = `
+    <div class="flex flex-wrap gap-2">
+      ${getPresets().map((p) => `
+      <button type="button" data-preset="${p.id}"
+        class="pl-3 ${p.custom ? 'pr-1.5' : 'pr-3'} py-2 rounded-full border text-label-md flex items-center gap-1.5 transition-colors ${
+          active(p) ? 'bg-accent text-on-primary border-transparent' : 'border-surface-container-highest text-secondary'
+        }">
+        ${esc(p.name)}
+        <span class="opacity-70 font-normal">${p.focusMin}/${p.breakMin}</span>
+        ${p.custom ? `<span data-preset-delete="${p.id}" role="button" aria-label="Delete ${esc(p.name)}"
+          class="material-symbols-outlined text-[14px] p-1 rounded-full opacity-70">close</span>` : ''}
+      </button>`).join('')}
+    </div>`;
+  };
+  container.addEventListener('click', (e) => {
+    const del = e.target.closest('[data-preset-delete]');
+    if (del) {
+      deletePreset(del.getAttribute('data-preset-delete'));
+      draw();
+      return;
+    }
+    const btn = e.target.closest('[data-preset]');
+    if (!btn) return;
+    const preset = getPresets().find((p) => p.id === btn.getAttribute('data-preset'));
+    if (preset) {
+      onApply(preset);
+      draw();
+    }
+  });
+  draw();
+  return draw;
 }
 
 // ---------- priority pills ----------

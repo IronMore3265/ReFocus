@@ -48,6 +48,13 @@ export function render(id) {
       </div>`}
     </div>
 
+    ${book.synopsis ? `
+    <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md mb-stack-md">
+      <h2 class="text-label-md uppercase tracking-wider text-secondary mb-2">Synopsis</h2>
+      <p data-synopsis class="text-body-md text-on-surface whitespace-pre-line line-clamp-4">${esc(book.synopsis)}</p>
+      <button data-action="toggle-synopsis" class="text-label-md text-accent-soft mt-2">Read more</button>
+    </section>` : ''}
+
     <section class="mb-stack-md">
       <div class="flex justify-between items-center mb-stack-sm">
         <h2 class="text-headline-md text-on-surface">Notes & Quotes</h2>
@@ -106,6 +113,17 @@ export function mount(root, id) {
     updateBook(id, { finished: false, finishedAt: null });
     rerender();
   });
+
+  // Synopsis clamp: hide the toggle when the text fits in four lines anyway.
+  const synopsisEl = root.querySelector('[data-synopsis]');
+  const synopsisBtn = root.querySelector('[data-action="toggle-synopsis"]');
+  if (synopsisEl && synopsisBtn) {
+    if (synopsisEl.scrollHeight <= synopsisEl.clientHeight + 2) synopsisBtn.classList.add('hidden');
+    synopsisBtn.addEventListener('click', () => {
+      const clamped = synopsisEl.classList.toggle('line-clamp-4');
+      synopsisBtn.textContent = clamped ? 'Read more' : 'Show less';
+    });
+  }
 
   root.querySelector('[data-action="edit"]').addEventListener('click', () => {
     const { el, close } = showSheet(`
