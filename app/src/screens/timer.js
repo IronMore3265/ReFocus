@@ -1,17 +1,21 @@
 // Pomodoro timer tab — ported from stitch pomodoro_timer/code.html
 import { getSettings, setSettings, addPreset } from '../store.js';
 import {
-  getTimer, startTimer, pauseTimer, resetTimer, skipPhase,
+  getTimer, startTimer, pauseTimer, resetTimer, skipPhase, endRound,
   remainingMs, phaseProgress, onTimerChange, fmtClock, refreshIdleTimer,
 } from '../engine.js';
 import {
-  appHeader, bottomNav, icon, progressRing, setRingProgress, showSheet, inputCls, primaryBtn,
-  stepperRow, bindSteppers, setStepperValue, mountPresetChips,
+  appHeader, bottomNav, icon, progressRing, setRingProgress, showSheet, confirmSheet,
+  inputCls, primaryBtn, stepperRow, bindSteppers, setStepperValue, mountPresetChips,
 } from '../ui.js';
 
-// Sessions / Break / Skip tiles — outlined to match the reset + options buttons.
-const STAT_BOX =
-  'flex-1 bg-surface-container-low border border-outline p-4 rounded-xl flex flex-col items-center justify-center';
+// Sessions and Break only report; Skip acts. They used to share one style, which
+// made a button look like a label — so the read-outs are flat and the action is
+// outlined, matching the reset and options buttons above it.
+const READOUT_BOX =
+  'flex-1 bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center';
+const ACTION_BOX =
+  'flex-1 bg-transparent border border-outline p-4 rounded-xl flex flex-col items-center justify-center text-accent-soft active:scale-95 transition-transform';
 
 function centerHtml(t) {
   return `
@@ -42,7 +46,9 @@ export function render() {
       <button data-action="reset" class="w-14 h-14 rounded-full border border-outline text-on-surface flex items-center justify-center active:scale-95 transition-transform">
         ${icon('refresh')}
       </button>
-      <button data-action="toggle" class="px-8 py-4 bg-accent text-on-primary rounded-full text-label-md flex items-center gap-2 active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
+      <!-- min-w + centred: the label cycles Pause / Resume / Start Focus / Start Break,
+           and without a floor the button resized under your thumb on every change. -->
+      <button data-action="toggle" class="min-w-[11.5rem] px-8 py-4 bg-accent text-on-primary rounded-full text-label-md flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
         ${mainBtnHtml(t)}
       </button>
       <button data-action="options" class="w-14 h-14 rounded-full border border-outline text-on-surface flex items-center justify-center active:scale-95 transition-transform">
@@ -51,17 +57,17 @@ export function render() {
     </div>
 
     <div class="mt-stack-lg flex gap-4 w-full max-w-sm">
-      <div class="${STAT_BOX}">
+      <div class="${READOUT_BOX}">
         <span class="text-label-sm text-secondary">Sessions</span>
         <span data-round class="text-headline-md text-on-surface">${t.round}/${s.sessionsPerRound}</span>
       </div>
-      <div class="${STAT_BOX}">
+      <div class="${READOUT_BOX}">
         <span class="text-label-sm text-secondary">Break</span>
-        <span class="text-headline-md text-on-surface">${s.breakMin}m</span>
+        <span data-break class="text-headline-md text-on-surface">${s.breakMin}m</span>
       </div>
-      <button data-action="skip" class="${STAT_BOX} active:scale-95 transition-transform">
-        <span class="text-label-sm text-secondary">Skip</span>
-        ${icon('skip_next', 'text-on-surface mt-1')}
+      <button data-action="skip" class="${ACTION_BOX}">
+        <span class="text-label-sm">Skip</span>
+        ${icon('skip_next', 'mt-1')}
       </button>
     </div>
   </main>
@@ -84,7 +90,12 @@ function openOptions() {
       <input data-preset-name placeholder="Preset name" class="${inputCls} flex-1" />
       <button type="button" data-action="add-preset" class="px-5 rounded-lg bg-accent text-on-primary text-label-md">Add</button>
     </div>
-    ${primaryBtn('Save', 'data-action="save-options"')}`);
+    ${primaryBtn('Save', 'data-action="save-options"')}
+    <div class="mt-stack-md pt-4 border-t border-surface-container">
+      <button type="button" data-action="end-round" class="w-full py-3 text-label-md text-error flex items-center justify-center gap-2 active:opacity-70 transition-opacity">
+        ${icon('restart_alt', 'text-[18px]')} End round &amp; start over
+      </button>
+    </div>`);
 
   const values = { focusMin: s.focusMin, breakMin: s.breakMin, sessionsPerRound: s.sessionsPerRound };
   const redrawChips = mountPresetChips(el.querySelector('[data-presets]'), {
@@ -119,6 +130,23 @@ function openOptions() {
     close();
     document.dispatchEvent(new CustomEvent('rerender-screen'));
   });
+
+  // Stacks on top of the options sheet; showSheet's openSheets keeps the back
+  // button popping them in order.
+  el.querySelector('[data-action="end-round"]').addEventListener('click', () => {
+    confirmSheet({
+      title: 'End this round?',
+      message: `The session counter goes back to 0/${getSettings().sessionsPerRound} and the timer resets to a `
+        + 'fresh focus session, so this round starts again from the beginning. Focus sessions you already '
+        + 'finished stay in your history and stats.',
+      confirmLabel: 'End round',
+      onConfirm: () => {
+        endRound();
+        close();
+        document.dispatchEvent(new CustomEvent('rerender-screen'));
+      },
+    });
+  });
 }
 
 export function mount(root) {
@@ -127,8 +155,12 @@ export function mount(root) {
   const phaseEl = root.querySelector('[data-phase]');
   const toggleBtn = root.querySelector('[data-action="toggle"]');
   const roundEl = root.querySelector('[data-round]');
+  const breakEl = root.querySelector('[data-break]');
 
   const pulseEl = root.querySelector('[data-pulse]');
+  // Both read-outs are settings-derived, so both have to be rewritten here — the
+  // Break tile had no hook and went on showing the old length until you left the
+  // screen and came back.
   const sync = () => {
     const t = getTimer();
     const s = getSettings();
@@ -136,6 +168,7 @@ export function mount(root) {
     phaseEl.textContent = t.phase === 'focus' ? 'Focus Session' : 'Break';
     toggleBtn.innerHTML = mainBtnHtml(t);
     roundEl.textContent = `${t.round}/${s.sessionsPerRound}`;
+    breakEl.textContent = `${s.breakMin}m`;
     setRingProgress(ringWrap, phaseProgress(t));
     pulseEl.classList.toggle('hidden', t.status !== 'running');
   };

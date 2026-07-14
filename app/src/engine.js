@@ -106,6 +106,18 @@ export function skipPhase() {
   });
 }
 
+// Abandon the round in progress and start over from session 1 of a fresh focus
+// phase. Sessions already logged are deliberately left alone: that focus time
+// was really spent, so it stays in the history, the stats and the streak.
+export function endRound() {
+  const t = getTimer();
+  stopNativeAlert();
+  return setTimer({
+    ...t, phase: 'focus', status: 'idle', endAt: null, startedAt: null,
+    remainingMs: phaseDurationMs('focus'), round: 0, lastSessionId: null,
+  });
+}
+
 // Called by the app's 1s heartbeat; detects phase completion.
 export function tickTimer() {
   const t = getTimer();

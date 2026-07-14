@@ -20,6 +20,7 @@ import * as historyScreen from './screens/history.js';
 import * as achievements from './screens/achievements.js';
 import * as shelf from './screens/shelf.js';
 import * as onboarding from './screens/onboarding.js';
+import * as changelog from './screens/changelog.js';
 
 // ---------- routes ----------
 // `accent` scopes the section color profile (see style.css .accent-*)
@@ -38,6 +39,7 @@ const routes = [
   { pattern: /^#\/achievements$/, screen: achievements },
   { pattern: /^#\/shelf$/, screen: shelf, accent: 'reading' },
   { pattern: /^#\/onboarding$/, screen: onboarding },
+  { pattern: /^#\/changelog$/, screen: changelog },
 ];
 
 const root = document.getElementById('app');
@@ -119,6 +121,7 @@ function openMenu() {
     ${item('#/history', 'calendar_month', 'History')}
     ${item('#/achievements', 'trophy', 'Achievements')}
     ${item('#/shelf', 'collections_bookmark', 'Finished Shelf')}
+    ${item('#/changelog', 'auto_awesome', "What's New")}
     ${item('#/settings', 'settings', 'Settings')}
     <button data-nav="#/profile" data-close class="w-full flex items-center gap-4 px-2 py-4 border-b border-surface-container text-on-surface active:bg-surface-bright transition-colors">
       ${avatarEl('w-6 h-6')}

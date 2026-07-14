@@ -5,10 +5,91 @@ import { refreshIdleTimer } from '../engine.js';
 import { playChime } from '../notify.js';
 import { nativeTimer, stopNativeTimer } from '../native/timer-service.js';
 import {
-  subHeader, icon, confirmSheet, showSheet, esc, inputCls,
+  subHeader, icon, confirmSheet, showSheet, esc, inputCls, primaryBtn,
   stepperRow, bindSteppers, setStepperValue, mountPresetChips,
   themeChooser, bindThemeChooser,
 } from '../ui.js';
+import { checkForUpdate, releasesUrl } from '../api/updates.js';
+import { nativeUpdater, downloadUpdate, installUpdate } from '../native/updater.js';
+
+// Offers the new version, then downloads and installs it on request. On the web
+// build there's no installer to hand the APK to, so it just opens the release.
+function openUpdateSheet(update) {
+  const { el, close } = showSheet(`
+    <h2 class="text-headline-md text-on-surface mb-1">ReFocus v${esc(update.version)} is available</h2>
+    <p class="text-body-sm text-secondary mb-4">You're on v${esc(__APP_VERSION__)}.</p>
+    ${update.notes ? `
+    <div class="bg-surface-container-low rounded-xl p-4 mb-stack-md max-h-64 overflow-y-auto">
+      <p class="text-body-md text-on-surface whitespace-pre-line">${esc(update.notes)}</p>
+    </div>` : ''}
+
+    <div data-choice>
+      ${primaryBtn(nativeUpdater ? 'Update now' : 'Open release page', 'data-action="update-now"')}
+      <button data-close class="w-full py-3 mt-2 text-label-md text-secondary">Maybe later</button>
+    </div>
+
+    <div data-progress class="hidden">
+      <div class="flex justify-between items-baseline mb-2">
+        <span class="text-body-md text-on-surface">Downloading…</span>
+        <span data-percent class="text-label-md text-secondary">0%</span>
+      </div>
+      <div class="w-full h-2 bg-surface-container-low rounded-full overflow-hidden">
+        <div data-bar class="h-full bg-accent-soft rounded-full transition-[width] duration-200" style="width:0%"></div>
+      </div>
+      <p data-progress-note class="text-label-sm text-secondary mt-3">Keep ReFocus open until the download finishes.</p>
+    </div>
+
+    <p data-error class="hidden text-body-md text-error mt-4"></p>`);
+
+  const choice = el.querySelector('[data-choice]');
+  const progress = el.querySelector('[data-progress]');
+  const percentEl = el.querySelector('[data-percent]');
+  const barEl = el.querySelector('[data-bar]');
+  const noteEl = el.querySelector('[data-progress-note]');
+  const errorEl = el.querySelector('[data-error]');
+
+  const fail = (message) => {
+    progress.classList.add('hidden');
+    choice.classList.remove('hidden');
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+  };
+
+  el.querySelector('[data-action="update-now"]').addEventListener('click', async () => {
+    if (!nativeUpdater || !update.apkUrl) {
+      window.open(update.htmlUrl || releasesUrl, '_blank', 'noopener');
+      close();
+      return;
+    }
+
+    errorEl.classList.add('hidden');
+    choice.classList.add('hidden');
+    progress.classList.remove('hidden');
+
+    try {
+      await downloadUpdate({
+        url: update.apkUrl,
+        version: update.version,
+        onProgress: (percent) => {
+          percentEl.textContent = `${percent}%`;
+          barEl.style.width = `${percent}%`;
+        },
+      });
+      noteEl.textContent = 'Downloaded — opening the installer…';
+      const { permissionRequired } = await installUpdate(update.version);
+      if (permissionRequired) {
+        // Android has just sent them to the "install unknown apps" screen; there
+        // is nothing to install until they come back and ask again.
+        noteEl.textContent = '';
+        fail('Allow ReFocus to install unknown apps, then tap Update now again.');
+      } else {
+        close();
+      }
+    } catch (err) {
+      fail(err.message || 'The update could not be downloaded.');
+    }
+  });
+}
 
 function toggleRow(label, key, on) {
   return `
@@ -90,6 +171,20 @@ export function render() {
       <button data-action="reset" class="w-full flex items-center gap-3 py-4 text-error border-t border-surface-container">
         ${icon('restart_alt', 'text-error')}
         <span class="text-body-md font-semibold">Erase all data & start fresh</span>
+      </button>
+    </section>
+
+    <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mt-gutter">
+      <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">About</h2>
+      <button data-action="check-updates" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
+        ${icon('system_update', 'text-secondary')}
+        <span class="text-body-md flex-grow text-left">Check for updates</span>
+        <span data-update-status class="text-label-sm text-secondary shrink-0">v${esc(__APP_VERSION__)}</span>
+      </button>
+      <button data-nav="#/changelog" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
+        ${icon('auto_awesome', 'text-secondary')}
+        <span class="text-body-md flex-grow text-left">What's new</span>
+        ${icon('chevron_right', 'text-secondary')}
       </button>
     </section>
 
@@ -178,6 +273,36 @@ export function mount(root) {
       });
     };
     reader.readAsText(file);
+  });
+
+  // --- about: update check ---
+  const checkBtn = root.querySelector('[data-action="check-updates"]');
+  const updateStatus = root.querySelector('[data-update-status]');
+  let checking = false;
+  checkBtn.addEventListener('click', async () => {
+    if (checking) return;
+    checking = true;
+    updateStatus.textContent = 'Checking…';
+    try {
+      const update = await checkForUpdate();
+      updateStatus.textContent = `v${__APP_VERSION__}`;
+      if (update) {
+        openUpdateSheet(update);
+      } else {
+        showSheet(`
+          <h2 class="text-headline-md text-on-surface mb-2">You're up to date</h2>
+          <p class="text-body-md text-secondary mb-6">ReFocus v${esc(__APP_VERSION__)} is the latest version.</p>
+          <button data-close class="w-full py-3 rounded-full border border-on-surface text-on-surface text-label-md">Close</button>`);
+      }
+    } catch (err) {
+      updateStatus.textContent = `v${__APP_VERSION__}`;
+      showSheet(`
+        <h2 class="text-headline-md text-on-surface mb-2">Couldn't check for updates</h2>
+        <p class="text-body-md text-secondary mb-6">${esc(err.message)}</p>
+        <button data-close class="w-full py-3 rounded-full border border-on-surface text-on-surface text-label-md">Close</button>`);
+    } finally {
+      checking = false;
+    }
   });
 
   root.querySelector('[data-action="reset"]').addEventListener('click', () => {

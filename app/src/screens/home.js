@@ -42,8 +42,9 @@ export function render() {
         })}
       </div>
       <div class="mt-stack-sm flex gap-4">
-        <button data-action="toggle" class="bg-accent text-on-primary px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">${running ? 'Pause' : 'Start'}</button>
-        <button data-action="skip" class="bg-transparent border border-on-surface text-on-surface px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform">Skip</button>
+        <!-- min-w so the button doesn't resize as the label flips Start ↔ Pause -->
+        <button data-action="toggle" class="min-w-[7rem] bg-accent text-on-primary px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.04)]">${running ? 'Pause' : 'Start'}</button>
+        <button data-action="skip" class="min-w-[7rem] bg-transparent border border-on-surface text-on-surface px-8 py-3 rounded-full text-label-md active:scale-95 transition-transform">Skip</button>
       </div>
     </div>
 
