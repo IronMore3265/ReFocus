@@ -7,12 +7,12 @@ export function medal(tier, size = 'w-14 h-14', iconName = null, iconCls = 'text
   if (!tier) {
     return `
     <div class="${size} rounded-full bg-surface-container-highest flex items-center justify-center">
-      ${icon(iconName || 'lock', `text-secondary ${iconCls}`)}
+      ${icon(iconName || 'locked', `text-secondary ${iconCls}`)}
     </div>`;
   }
   return `
   <div class="${size} rounded-full flex items-center justify-center" style="background:${tier.color}">
-    ${icon(iconName || 'military_tech', `text-white ${iconCls}`)}
+    ${icon(iconName || 'medal', `text-white ${iconCls}`)}
   </div>`;
 }
 
@@ -32,8 +32,8 @@ export function render() {
     <!-- Tier ladder legend -->
     <div class="grid grid-cols-4 bg-surface-container-lowest border border-surface-container-high rounded-xl px-2 py-3 mb-stack-md gap-y-3">
       ${TIERS.map((t) => `
-      <div class="flex flex-col items-center gap-1">
-        <span class="material-symbols-outlined icon-fill text-[28px]" style="color:${t.color}">trophy</span>
+      <div class="flex flex-col items-center gap-2">
+        <span class="flex leading-none" style="color:${t.color}">${icon('tier', 'text-[28px]')}</span>
         <span class="text-label-sm text-secondary">${t.name}</span>
       </div>`).join('')}
     </div>

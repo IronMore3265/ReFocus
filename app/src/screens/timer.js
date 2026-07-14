@@ -28,7 +28,7 @@ function mainBtnHtml(t) {
     return `${icon('pause', '', true)} Pause`;
   }
   const label = t.status === 'paused' ? 'Resume' : t.phase === 'focus' ? 'Start Focus' : 'Start Break';
-  return `${icon('play_arrow', '', true)} ${label}`;
+  return `${icon('play', '', true)} ${label}`;
 }
 
 export function render() {
@@ -52,7 +52,7 @@ export function render() {
         ${mainBtnHtml(t)}
       </button>
       <button data-action="options" class="w-14 h-14 rounded-full border border-outline text-on-surface flex items-center justify-center active:scale-95 transition-transform">
-        ${icon('more_horiz')}
+        ${icon('timer-options')}
       </button>
     </div>
 
@@ -67,7 +67,7 @@ export function render() {
       </div>
       <button data-action="skip" class="${ACTION_BOX}">
         <span class="text-label-sm">Skip</span>
-        ${icon('skip_next', 'mt-1')}
+        ${icon('skip', 'mt-1')}
       </button>
     </div>
   </main>
@@ -84,7 +84,7 @@ function openOptions() {
     ${stepperRow('Break length', 'breakMin', s.breakMin, { min: 1, max: 60 })}
     ${stepperRow('Sessions per round', 'sessionsPerRound', s.sessionsPerRound, { min: 1, max: 12, unit: '' })}
     <button type="button" data-action="save-preset" class="w-full py-3 text-label-md text-accent-soft flex items-center justify-center gap-2 active:opacity-70 transition-opacity">
-      ${icon('bookmark_add', 'text-[18px]')} Save current as preset
+      ${icon('preset-save', 'text-[18px]')} Save current as preset
     </button>
     <div data-preset-name-row class="hidden flex gap-2 mb-3">
       <input data-preset-name placeholder="Preset name" class="${inputCls} flex-1" />
@@ -93,7 +93,7 @@ function openOptions() {
     ${primaryBtn('Save', 'data-action="save-options"')}
     <div class="mt-stack-md pt-4 border-t border-surface-container">
       <button type="button" data-action="end-round" class="w-full py-3 text-label-md text-error flex items-center justify-center gap-2 active:opacity-70 transition-opacity">
-        ${icon('restart_alt', 'text-[18px]')} End round &amp; start over
+        ${icon('reset', 'text-[18px]')} End round &amp; start over
       </button>
     </div>`);
 

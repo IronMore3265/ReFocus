@@ -19,7 +19,7 @@ export function render() {
           <span class="text-label-sm text-accent-soft mt-1">Finished ${b.finishedAt ? formatDate(b.finishedAt) : ''} · ${b.totalPages} pages</span>
         </div>
       </button>`).join('')
-      : emptyState('collections_bookmark', 'Nothing here yet', 'Books you mark as finished will appear on this shelf.')}
+      : emptyState('shelf', 'Nothing here yet', 'Books you mark as finished will appear on this shelf.')}
     </div>
   </main>`;
 }

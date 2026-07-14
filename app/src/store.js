@@ -118,7 +118,7 @@ export function setApifyToken(token) {
 // ---------- books ----------
 // book: { id, title, author, totalPages, currentPage, cover (data URI/URL | null),
 //         synopsis, notes: [{id, text, page, at, updatedAt?}],
-//         vocab: [{id, word, phonetic, meanings, synonyms, page, at}],
+//         vocab: [{id, word, phonetic, audio, meanings, synonyms, page, at}],
 //         finished: bool, finishedAt, createdAt, updatedAt }
 // `notes` and `vocab` are nested in the book rather than being collections of
 // their own — they're only ever read through their book.
@@ -193,14 +193,14 @@ export function deleteBookNote(bookId, noteId) {
 // Every dictionary lookup is logged against the book it was made from. Looking
 // the same word up twice refreshes the existing entry instead of stacking a
 // duplicate, and moves it back to the top of the list.
-export function addBookVocab(bookId, { word, phonetic = '', meanings = [], synonyms = [], page }) {
+export function addBookVocab(bookId, { word, phonetic = '', audio = '', meanings = [], synonyms = [], page }) {
   const book = getBook(bookId);
   if (!book) return null;
   const key = String(word).trim().toLowerCase();
   const existing = bookVocab(book).find((v) => v.word.toLowerCase() === key);
   const entry = {
     id: existing?.id || uid(),
-    word, phonetic, meanings, synonyms,
+    word, phonetic, audio, meanings, synonyms,
     page: Number.isFinite(Number(page)) ? Number(page) : book.currentPage,
     at: Date.now(),
   };
@@ -208,6 +208,14 @@ export function addBookVocab(bookId, { word, phonetic = '', meanings = [], synon
     vocab: [...bookVocab(book).filter((v) => v.id !== entry.id), entry],
   });
   return entry;
+}
+// Corrects a saved word after the fact — the page you met it on, mostly.
+export function updateBookVocab(bookId, vocabId, patch) {
+  const book = getBook(bookId);
+  if (!book) return;
+  updateBook(bookId, {
+    vocab: bookVocab(book).map((v) => (v.id === vocabId ? { ...v, ...patch } : v)),
+  });
 }
 export function deleteBookVocab(bookId, vocabId) {
   const book = getBook(bookId);
@@ -389,31 +397,31 @@ export const ACHIEVEMENT_TRACKS = [
     metric: () => getSessions().length,
   },
   {
-    id: 'hours', icon: 'schedule', title: 'Focus Hours', unit: 'hours',
+    id: 'hours', icon: 'clock', title: 'Focus Hours', unit: 'hours',
     thresholds: [3, 15, 40, 100, 250, 600, 1200],
     titles: ['Warmed Up', 'Deep Diver', 'Hour Collector', 'Time Sculptor', 'Flow Master', 'Marathon Mind', 'Keeper of Hours'],
     metric: () => Math.floor(getSessions().reduce((s, x) => s + x.minutes, 0) / 60),
   },
   {
-    id: 'streak', icon: 'local_fire_department', title: 'Best Streak', unit: 'days',
+    id: 'streak', icon: 'streak', title: 'Best Streak', unit: 'days',
     thresholds: [5, 14, 30, 60, 120, 250, 500],
     titles: ['Spark', 'Week Walker', 'Month of Fire', 'Habit Forged', 'Season of Focus', 'Unbroken', 'Eternal Flame'],
     metric: longestStreak,
   },
   {
-    id: 'tasks', icon: 'task_alt', title: 'Tasks Completed', unit: 'tasks',
+    id: 'tasks', icon: 'task-done', title: 'Tasks Completed', unit: 'tasks',
     thresholds: [15, 60, 150, 300, 600, 1200, 2000],
     titles: ['List Starter', 'Box Checker', 'Task Tamer', 'Steady Finisher', 'Execution Engine', 'Master of Done', 'Legend of Lists'],
     metric: () => getTasks().filter((t) => t.done).length,
   },
   {
-    id: 'pages', icon: 'auto_stories', title: 'Pages Read', unit: 'pages',
+    id: 'pages', icon: 'book', title: 'Pages Read', unit: 'pages',
     thresholds: [150, 500, 1200, 2500, 5000, 10000, 20000],
     titles: ['Page Turner', 'Chapter Chaser', 'Bookworm', 'Story Devourer', 'Tome Traveler', 'Sage of Pages', 'Living Library'],
     metric: () => getReadingLog().reduce((sum, r) => sum + (r.to - r.from), 0),
   },
   {
-    id: 'books', icon: 'collections_bookmark', title: 'Books Finished', unit: 'books',
+    id: 'books', icon: 'shelf', title: 'Books Finished', unit: 'books',
     thresholds: [3, 8, 15, 30, 60, 100, 200],
     titles: ['First Finish', 'Shelf Builder', 'Book Collector', 'Reading Machine', 'Bibliophile', 'Curator', 'Grand Librarian'],
     metric: () => finishedBooks().length,

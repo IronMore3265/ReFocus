@@ -48,7 +48,7 @@ export function render() {
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex items-center gap-3 mb-stack-sm">
-        ${icon('local_fire_department', 'text-accent-soft', streak > 0)}
+        ${icon('streak', 'text-accent-soft', streak > 0)}
         <h2 class="text-headline-md text-on-surface">Daily Streak</h2>
       </div>
 
@@ -70,7 +70,7 @@ export function render() {
             <div class="w-full h-10 rounded-xl flex items-center justify-center transition-colors ${cell} ${
               isToday ? 'border-2 border-accent-soft' : 'border'
             }">
-              ${icon('local_fire_department', 'text-[18px]', lit)}
+              ${icon('streak', 'text-[18px]', lit)}
             </div>
             <span class="text-label-sm ${isToday ? 'text-accent-soft font-bold' : 'text-secondary'}">${d.label}</span>
           </div>`;
@@ -88,7 +88,7 @@ export function render() {
           ${icon('trophy', 'text-accent-soft')}
           <span class="text-headline-md text-on-surface">Recent Achievements</span>
         </span>
-        ${icon('chevron_right', 'text-secondary')}
+        ${icon('chevron-right', 'text-secondary')}
       </span>
       ${ranked.length ? ranked.map(({ track, tier, value }) => `
       <span class="flex items-center gap-4 py-3 border-b border-surface-container last:border-0">
@@ -101,9 +101,9 @@ export function render() {
     </button>
 
     <button data-nav="#/history" class="flex items-center justify-between px-stack-md py-4 bg-surface-container-lowest border border-surface-container-high rounded-xl text-on-surface active:bg-surface-container-low transition-colors">
-      <span class="flex items-center gap-3">${icon('calendar_month', 'text-accent-soft')}
+      <span class="flex items-center gap-3">${icon('calendar', 'text-accent-soft')}
         <span class="text-body-md">View full history</span></span>
-      ${icon('chevron_right', 'text-secondary')}
+      ${icon('chevron-right', 'text-secondary')}
     </button>
   </main>`;
 }

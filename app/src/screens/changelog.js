@@ -4,9 +4,9 @@ import { formatDate } from '../store.js';
 import { subHeader, icon, esc } from '../ui.js';
 
 const KINDS = {
-  new: { label: 'New', iconName: 'auto_awesome', cls: 'text-accent-soft' },
-  improved: { label: 'Improved', iconName: 'trending_up', cls: 'text-accent-soft' },
-  fixed: { label: 'Fixed', iconName: 'build', cls: 'text-secondary' },
+  new: { label: 'New', iconName: 'sparkle', cls: 'text-accent-soft' },
+  improved: { label: 'Improved', iconName: 'trending-up', cls: 'text-accent-soft' },
+  fixed: { label: 'Fixed', iconName: 'wrench', cls: 'text-secondary' },
 };
 const ORDER = ['new', 'improved', 'fixed'];
 

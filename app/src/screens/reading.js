@@ -48,13 +48,13 @@ export function render() {
     <div class="flex flex-col gap-gutter stagger">
       ${books.length
         ? books.map(bookCard).join('')
-        : emptyState('auto_stories', 'No books yet', 'Tap + to add the book you are reading.')}
+        : emptyState('book', 'No books yet', 'Tap + to add the book you are reading.')}
     </div>
     ${finished.length ? `
     <button data-nav="#/shelf" class="w-full mt-stack-md flex items-center justify-between px-stack-md py-4 bg-surface-container-low rounded-xl text-on-surface active:bg-surface-container transition-colors">
-      <span class="flex items-center gap-3">${icon('collections_bookmark', 'text-accent-soft')}
+      <span class="flex items-center gap-3">${icon('shelf', 'text-accent-soft')}
         <span class="text-body-md">Finished shelf</span></span>
-      <span class="flex items-center gap-1 text-secondary text-body-sm">${finished.length} ${icon('chevron_right')}</span>
+      <span class="flex items-center gap-1 text-secondary text-body-sm">${finished.length} ${icon('chevron-right')}</span>
     </button>` : ''}
   </main>
   ${fab('add-book')}
@@ -129,7 +129,7 @@ export function openAddBook(onDone) {
           <p class="text-body-sm text-secondary truncate">${esc(b.author || 'Unknown author')}</p>
           <p class="text-label-sm text-secondary mt-0.5">${b.totalPages ? `${b.totalPages} pages · ` : ''}${esc(b.source)}</p>
         </div>
-        ${icon('chevron_right', 'text-secondary flex-shrink-0')}
+        ${icon('chevron-right', 'text-secondary flex-shrink-0')}
       </button>`).join('');
   };
 

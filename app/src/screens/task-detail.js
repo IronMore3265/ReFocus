@@ -35,7 +35,7 @@ export function render(id) {
       <span class="text-label-md uppercase tracking-wider text-secondary block mb-3">Due</span>
       <button id="due-picker-trigger" class="${inputCls} w-full flex justify-between items-center text-left bg-transparent mb-4 cursor-pointer">
         <span class="${t.due ? 'text-on-surface' : 'text-secondary'}">${displayStr}</span>
-        ${icon('calendar_month', 'text-secondary')}
+        ${icon('calendar', 'text-secondary')}
       </button>
       <span class="text-label-md uppercase tracking-wider text-secondary block mb-3">Priority</span>
       ${priorityPills(t.priority)}

@@ -36,7 +36,7 @@ function collectEntries() {
   }
   for (const r of getReadingLog()) {
     push(r.day, {
-      type: 'reading', id: r.id, at: r.at, iconName: 'auto_stories',
+      type: 'reading', id: r.id, at: r.at, iconName: 'book',
       text: `Read ${r.to - r.from} pages of ${bookTitle[r.bookId] || 'a book'}`,
       sub: formatTime(r.at),
     });
@@ -44,7 +44,7 @@ function collectEntries() {
   for (const t of getTasks()) {
     if (t.done && t.completedAt) {
       push(dayKey(new Date(t.completedAt)), {
-        type: 'task', id: t.id, at: t.completedAt, iconName: 'task_alt',
+        type: 'task', id: t.id, at: t.completedAt, iconName: 'task-done',
         text: `Completed "${t.title}"`,
         sub: formatTime(t.completedAt),
       });
@@ -124,7 +124,7 @@ export function render() {
     return `
     ${subHeader('History')}
     <main class="pt-page pb-page-sub px-margin-mobile max-w-2xl mx-auto page-enter">
-      ${emptyState('calendar_month', 'No history yet', 'Your focus sessions, reading, and completed tasks will appear here day by day.')}
+      ${emptyState('calendar', 'No history yet', 'Your focus sessions, reading, and completed tasks will appear here day by day.')}
     </main>`;
   }
 

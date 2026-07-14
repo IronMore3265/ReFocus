@@ -2,26 +2,50 @@
 import {
   getBook, updateBook, deleteBook,
   addBookNote, updateBookNote, deleteBookNote, bookNotes,
-  addBookVocab, deleteBookVocab, bookVocab,
+  addBookVocab, updateBookVocab, deleteBookVocab, bookVocab,
   getReadingLog, formatDate,
 } from '../store.js';
 import {
   subHeader, icon, esc, progressBar, showSheet, confirmSheet,
   field, inputCls, primaryBtn, emptyState, rerender,
-  clampedText, bindClampToggles,
+  clampedText, bindClampToggles, textBtn, pillBtn,
 } from '../ui.js';
 import { coverHtml } from './reading.js';
 import { coverFromFile } from '../api/books.js';
 import { lookupWord, WordNotFoundError } from '../api/dictionary.js';
+
+// Says the word out loud. The API's recording is the real pronunciation, so it
+// wins — but it only exists for some words, it's a remote URL (so it needs the
+// network even for a word saved long ago), and words saved before this feature
+// have no `audio` at all. The device's own voice covers all three, which is what
+// lets the speaker button be unconditional rather than appearing at random.
+async function speak(entry) {
+  if (entry.audio) {
+    try {
+      await new Audio(entry.audio).play();
+      return;
+    } catch { /* offline, or a dead URL — fall through to the device voice */ }
+  }
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel(); // a second tap should replace the first, not queue behind it
+  speechSynthesis.speak(new SpeechSynthesisUtterance(entry.word));
+}
+
+const speakBtn = (attrs, cls = 'text-[18px]') => `
+  <button type="button" ${attrs} aria-label="Pronounce"
+    class="p-2 -m-1 rounded-full text-accent-soft shrink-0 active:bg-accent-tint active:scale-90 transition-all">
+    ${icon('speak', cls)}
+  </button>`;
 
 // A saved lookup, rendered in full: the dictionary sheet shows this for a fresh
 // result, and the vocabulary list shows it again when you tap a word — off the
 // stored copy, so re-reading an entry never needs the network.
 function entryDetailHtml(entry) {
   return `
-  <div class="flex items-baseline gap-2 mb-4">
+  <div class="flex items-center gap-2 mb-4">
     <h3 class="text-headline-md text-on-surface">${esc(entry.word)}</h3>
     ${entry.phonetic ? `<span class="text-body-sm text-secondary">${esc(entry.phonetic)}</span>` : ''}
+    ${speakBtn('data-speak', 'text-[20px]')}
   </div>
   ${(entry.meanings || []).map((m) => `
   <div class="mb-4">
@@ -39,23 +63,23 @@ function entryDetailHtml(entry) {
     <span class="text-label-sm uppercase tracking-wider text-secondary block mb-2">Synonyms</span>
     <div class="flex flex-wrap gap-2">
       ${entry.synonyms.slice(0, 12).map((s) => `
-      <span class="px-3 py-1 rounded-full bg-surface-container text-label-md text-on-surface">${esc(s)}</span>`).join('')}
+      <span class="synonym-chip px-3 py-1 rounded-full text-label-md">${esc(s)}</span>`).join('')}
     </div>
   </div>` : ''}`;
 }
 
 function noteCardHtml(n) {
   return `
-  <div class="bg-surface-container-low border border-surface-container-high border-l-4 border-l-accent-soft rounded-xl p-4">
+  <div class="bg-surface-container-high border border-surface-container-highest rounded-xl p-4">
     ${clampedText(n.text, { clampCls: 'line-clamp-5', cls: 'text-body-md text-on-surface' })}
     <div class="flex justify-between items-center gap-2 mt-3 pt-3 border-t border-surface-container">
       <span class="text-label-sm text-secondary min-w-0 truncate">
-        <span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface">p. ${n.page}</span>
-        <span class="ml-1">${formatDate(n.at)}</span>
+        <span class="text-on-surface">p. ${n.page}</span>
+        <span class="ml-1">· ${formatDate(n.at)}</span>
       </span>
-      <span class="flex items-center shrink-0">
-        <button data-note-edit="${n.id}" aria-label="Edit note" class="p-2 text-secondary active:opacity-70">${icon('edit', 'text-[18px]')}</button>
-        <button data-note-del="${n.id}" aria-label="Delete note" class="p-2 text-secondary active:opacity-70">${icon('delete', 'text-[18px]')}</button>
+      <span class="flex items-center gap-1 shrink-0">
+        ${textBtn('Edit', `data-note-edit="${n.id}"`)}
+        ${textBtn('Delete', `data-note-del="${n.id}"`, { tone: 'error' })}
       </span>
     </div>
   </div>`;
@@ -66,22 +90,31 @@ function vocabCardHtml(v) {
   const gloss = first?.definitions?.[0]?.definition;
   const synonyms = v.synonyms || [];
   return `
-  <div class="bg-surface-container-low border border-surface-container-high rounded-xl p-4">
-    <div class="flex justify-between items-start gap-2">
+  <div class="bg-surface-container-high border border-surface-container-highest rounded-xl p-4">
+    <div class="flex items-start gap-2">
       <button data-vocab-open="${v.id}" class="text-left min-w-0 flex-grow active:opacity-70">
         <span class="text-body-lg font-semibold text-on-surface">${esc(v.word)}</span>
         ${v.phonetic ? `<span class="text-body-sm text-secondary ml-2">${esc(v.phonetic)}</span>` : ''}
         ${first?.partOfSpeech ? `<span class="block text-label-sm uppercase tracking-wider text-accent-soft mt-0.5">${esc(first.partOfSpeech)}</span>` : ''}
       </button>
-      <button data-vocab-del="${v.id}" aria-label="Remove ${esc(v.word)}" class="p-2 -m-1 text-secondary shrink-0 active:opacity-70">${icon('delete', 'text-[18px]')}</button>
+      ${speakBtn(`data-vocab-speak="${v.id}"`)}
     </div>
     ${gloss ? `<div class="mt-2">${clampedText(gloss, { clampCls: 'line-clamp-2', cls: 'text-body-md text-on-surface' })}</div>` : ''}
     ${synonyms.length ? `
     <div class="flex flex-wrap gap-1.5 mt-3">
       ${synonyms.slice(0, 5).map((s) => `
-      <span class="px-2 py-0.5 rounded-full bg-surface-container text-label-sm text-secondary">${esc(s)}</span>`).join('')}
+      <span class="synonym-chip px-2 py-0.5 rounded-full text-label-sm">${esc(s)}</span>`).join('')}
     </div>` : ''}
-    <span class="block text-label-sm text-secondary mt-3">p. ${v.page} · ${formatDate(v.at)}</span>
+    <div class="flex justify-between items-center gap-2 mt-3 pt-3 border-t border-surface-container">
+      <span class="text-label-sm text-secondary min-w-0 truncate">
+        <span class="text-on-surface">p. ${v.page}</span>
+        <span class="ml-1">· ${formatDate(v.at)}</span>
+      </span>
+      <span class="flex items-center gap-1 shrink-0">
+        ${textBtn('Edit page', `data-vocab-page="${v.id}"`)}
+        ${textBtn('Remove', `data-vocab-del="${v.id}"`, { tone: 'error' })}
+      </span>
+    </div>
   </div>`;
 }
 
@@ -104,7 +137,7 @@ export function render(id) {
       <button data-action="edit-cover" class="relative flex-shrink-0 rounded active:scale-[0.98] transition-transform" aria-label="Change cover">
         ${coverHtml(book, 'w-24 h-36')}
         <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accent text-on-primary flex items-center justify-center border-2 border-surface">
-          ${icon('photo_camera', 'text-[14px]')}
+          ${icon('camera', 'text-[14px]')}
         </span>
       </button>
       <div class="flex flex-col min-w-0">
@@ -140,7 +173,7 @@ export function render(id) {
     <section class="mb-stack-md">
       <div class="flex justify-between items-center mb-stack-sm">
         <h2 class="text-headline-md text-on-surface">Notes &amp; Quotes</h2>
-        <button data-action="add-note" aria-label="Add note" class="p-2 text-accent-soft">${icon('add_circle')}</button>
+        ${pillBtn('Add note', 'add', 'data-action="add-note"')}
       </div>
       <div class="flex flex-col gap-4">
         ${notes.length
@@ -152,7 +185,7 @@ export function render(id) {
     <section class="mb-stack-md">
       <div class="flex justify-between items-center mb-stack-sm">
         <h2 class="text-headline-md text-on-surface">Vocabulary</h2>
-        <button data-action="lookup" aria-label="Look up a word" class="p-2 text-accent-soft">${icon('search')}</button>
+        ${pillBtn('Look up', 'dictionary', 'data-action="lookup"')}
       </div>
       <div class="flex flex-col gap-4">
         ${vocab.length
@@ -177,17 +210,32 @@ export function render(id) {
 // The dictionary. Opens standalone from the Vocabulary section, and stacks on
 // top of the note sheet when you hit a word mid-note — the note underneath keeps
 // everything you'd typed.
-function openDictionarySheet(book) {
+function openDictionarySheet(bookId) {
+  // Read the book fresh rather than trusting the caller's copy: mount() captured
+  // its `book` when the screen rendered, so a sheet opened after an "Update Page"
+  // would otherwise prefill the page you were on *before* that update.
+  const book = getBook(bookId);
+  if (!book) return;
+
   const { el } = showSheet(`
     <h2 class="text-headline-md text-on-surface mb-4">Dictionary</h2>
-    <form data-form class="flex gap-2 mb-4">
-      <input data-word name="word" type="text" required autocomplete="off" autocapitalize="none"
-        spellcheck="false" placeholder="Look up a word…" class="${inputCls} flex-1" />
-      <button type="submit" class="px-5 rounded-lg bg-accent text-on-primary text-label-md shrink-0">Look up</button>
+    <form data-form class="flex items-end gap-2 mb-4">
+      <label class="flex-1 min-w-0">
+        <span class="text-label-md uppercase tracking-wider text-secondary block mb-2">Word</span>
+        <input data-word name="word" type="text" required autocomplete="off" autocapitalize="none"
+          spellcheck="false" placeholder="Look up a word…" class="${inputCls}" />
+      </label>
+      <label class="w-[4.5rem] shrink-0">
+        <span class="text-label-md uppercase tracking-wider text-secondary block mb-2">Page</span>
+        <input data-page name="page" type="number" min="0" max="${book.totalPages}"
+          value="${book.currentPage}" class="${inputCls} px-2 text-center" />
+      </label>
+      <button type="submit" class="px-5 py-3 rounded-lg bg-accent text-on-primary text-label-md shrink-0">Look up</button>
     </form>
     <div data-result></div>`);
 
   const input = el.querySelector('[data-word]');
+  const pageInput = el.querySelector('[data-page]');
   const result = el.querySelector('[data-result]');
   const message = (text, cls = 'text-secondary') =>
     `<p class="text-body-md ${cls} py-2">${esc(text)}</p>`;
@@ -200,13 +248,16 @@ function openDictionarySheet(book) {
     try {
       const entry = await lookupWord(word);
       // Showing it and logging it are the same action — a lookup you made while
-      // reading this book is worth keeping.
-      addBookVocab(book.id, { ...entry, page: book.currentPage });
+      // reading this book is worth keeping. The page comes from the field, which
+      // starts at your saved progress but is yours to change: where you actually
+      // are is rarely the last page you told the app about.
+      const saved = addBookVocab(book.id, { ...entry, page: Number(pageInput.value) });
       result.innerHTML = `
         ${entryDetailHtml(entry)}
         <p class="text-label-sm text-accent-soft flex items-center gap-1 mt-4 pt-3 border-t border-surface-container">
-          ${icon('bookmark_added', 'text-[16px]')} Saved to this book's vocabulary
+          ${icon('saved', 'text-[16px]')} Saved to this book's vocabulary at p. ${saved.page}
         </p>`;
+      result.querySelector('[data-speak]')?.addEventListener('click', () => speak(entry));
       // Refresh the Vocabulary list behind the sheet. The sheets live on <body>,
       // outside the screen root, so re-rendering doesn't disturb them — a note
       // half-typed underneath this one survives.
@@ -222,16 +273,36 @@ function openDictionarySheet(book) {
   input.focus();
 }
 
+// Corrects the page on a word already saved — the counterpart to editing a note,
+// and the safety net for a word looked up before you fixed the page field.
+function openVocabPageSheet(bookId, entry) {
+  const book = getBook(bookId);
+  if (!book) return;
+
+  const { el, close } = showSheet(`
+    <h2 class="text-headline-md text-on-surface mb-1">${esc(entry.word)}</h2>
+    <p class="text-body-sm text-secondary mb-4">Which page did you meet this word on?</p>
+    <form data-form>
+      ${field('Page', `<input name="page" type="number" min="0" max="${book.totalPages}"
+        value="${entry.page}" required class="${inputCls}" autofocus />`)}
+      ${primaryBtn('Save', 'type="submit"')}
+    </form>`);
+
+  el.querySelector('[data-form]').addEventListener('submit', (e) => {
+    e.preventDefault();
+    updateBookVocab(bookId, entry.id, { page: Number(new FormData(e.target).get('page')) });
+    close();
+    rerender();
+  });
+}
+
 // One sheet for both adding and editing — `note` absent means add.
 function openNoteSheet(book, note = null) {
   const editing = !!note;
   const { el, close } = showSheet(`
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center gap-2 mb-4">
       <h2 class="text-headline-md text-on-surface">${editing ? 'Edit Note' : 'Add Note'}</h2>
-      <button type="button" data-action="lookup" aria-label="Look up a word"
-        class="p-2 rounded-full border border-surface-container-highest text-accent-soft active:scale-95 transition-transform">
-        ${icon('search', 'text-[20px]')}
-      </button>
+      ${pillBtn('Look up', 'dictionary', 'data-action="lookup"')}
     </div>
     <form data-form>
       ${field('Note or quote', `<textarea name="text" rows="6" required
@@ -242,7 +313,7 @@ function openNoteSheet(book, note = null) {
       ${primaryBtn(editing ? 'Save Changes' : 'Save Note', 'type="submit"')}
     </form>`);
 
-  el.querySelector('[data-action="lookup"]').addEventListener('click', () => openDictionarySheet(book));
+  el.querySelector('[data-action="lookup"]').addEventListener('click', () => openDictionarySheet(book.id));
 
   el.querySelector('[data-form]').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -377,19 +448,43 @@ export function mount(root, id) {
   });
 
   // --- vocabulary ---
-  root.querySelector('[data-action="lookup"]').addEventListener('click', () => openDictionarySheet(book));
+  const vocabEntry = (btn, attr) =>
+    bookVocab(getBook(id)).find((v) => v.id === btn.getAttribute(attr));
+
+  root.querySelector('[data-action="lookup"]').addEventListener('click', () => openDictionarySheet(id));
 
   root.querySelectorAll('[data-vocab-open]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const entry = bookVocab(getBook(id)).find((v) => v.id === btn.getAttribute('data-vocab-open'));
-      if (entry) showSheet(entryDetailHtml(entry));
+      const entry = vocabEntry(btn, 'data-vocab-open');
+      if (!entry) return;
+      const { el } = showSheet(entryDetailHtml(entry));
+      el.querySelector('[data-speak]')?.addEventListener('click', () => speak(entry));
+    });
+  });
+
+  root.querySelectorAll('[data-vocab-speak]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const entry = vocabEntry(btn, 'data-vocab-speak');
+      if (entry) speak(entry);
+    });
+  });
+
+  root.querySelectorAll('[data-vocab-page]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const entry = vocabEntry(btn, 'data-vocab-page');
+      if (entry) openVocabPageSheet(id, entry);
     });
   });
 
   root.querySelectorAll('[data-vocab-del]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      deleteBookVocab(id, btn.getAttribute('data-vocab-del'));
-      rerender();
+      const entry = vocabEntry(btn, 'data-vocab-del');
+      confirmSheet({
+        title: 'Remove word?',
+        message: `"${entry ? entry.word : 'This word'}" will be removed from this book's vocabulary.`,
+        confirmLabel: 'Remove',
+        onConfirm: () => { deleteBookVocab(id, btn.getAttribute('data-vocab-del')); rerender(); },
+      });
     });
   });
 }

@@ -45,7 +45,7 @@ const slides = [
     <div class="float w-44 mb-stack-lg accent-reading">
       <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
         <div class="w-12 h-16 mx-auto mb-3 rounded bg-surface-container-low border border-surface-variant flex flex-col items-center justify-center gap-1">
-          ${icon('auto_stories', 'text-accent-soft')}
+          ${icon('book', 'text-accent-soft')}
         </div>
         <div class="w-full h-1.5 bg-surface-container-low rounded-full overflow-hidden mb-2">
           <div class="grow-x h-full bg-accent-soft rounded-full" style="width:72%; animation-duration:1.6s"></div>
@@ -72,7 +72,7 @@ const slides = [
   },
   {
     setup: true,
-    art: () => badge('palette'),
+    art: () => badge('theme'),
     title: 'Pick your theme',
     copy: 'Light, dark, or follow your system — switch anytime in Settings.',
     form: () => `<div class="w-full max-w-xs mt-stack-md">${themeChooser()}</div>`,
@@ -80,14 +80,14 @@ const slides = [
   },
   {
     setup: true,
-    art: () => badge('waving_hand'),
+    art: () => badge('profile-name'),
     title: 'What should we call you?',
     copy: 'Used for your daily greeting.',
     form: () => `<input data-name type="text" placeholder="Your name" value="${esc(getProfile().name)}" class="${inputCls} max-w-xs text-center mt-2" />`,
   },
   {
     setup: true,
-    art: () => badge('tune'),
+    art: () => badge('rhythm'),
     title: 'Your rhythm',
     copy: 'You can change these anytime in Settings.',
     form: () => {
@@ -136,11 +136,11 @@ function shell() {
     <div class="flex gap-3 w-full max-w-xs mx-auto">
       ${step > 0 ? `
       <button data-action="back" class="flex-1 py-4 rounded-full border border-surface-container-highest text-secondary text-label-md flex items-center justify-center gap-1 active:scale-[0.98] transition-transform">
-        ${icon('chevron_left', 'text-[18px]')} Back
+        ${icon('chevron-left', 'text-[18px]')} Back
       </button>` : ''}
       <button data-action="next" class="flex-[2] py-4 rounded-full bg-accent text-on-primary text-label-md flex items-center justify-center gap-1 active:scale-[0.98] transition-transform">
         ${last ? 'Start Focusing' : 'Next'}
-        ${last ? '' : icon('chevron_right', 'text-[18px]')}
+        ${last ? '' : icon('chevron-right', 'text-[18px]')}
       </button>
     </div>
   </main>`;
