@@ -7,6 +7,19 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.2.0',
+    date: '2026-07-14',
+    summary: 'Hear a word said out loud, pin it to the page you actually met it on, and a lighter, sharper set of icons everywhere.',
+    changes: [
+      { kind: 'new', text: 'Hear how a word is said. Tap the speaker on any word — in the dictionary or in your saved vocabulary — and ReFocus plays the dictionary\'s own recording. Where there isn\'t one, your phone reads the word out instead, so the button works on every word, including the ones you saved before this update.' },
+      { kind: 'new', text: 'Set the page when you look a word up. The field starts at the page you\'ve saved, but where you\'re actually reading is rarely the last page you told the app about. You can also fix the page on a word you already saved, with Edit page.' },
+      { kind: 'improved', text: 'Removing a word from your vocabulary now asks first, the way deleting a note already did — a mistapped Remove no longer costs you the word.' },
+      { kind: 'improved', text: 'Notes and saved words now say Edit and Delete in words rather than as bare icons, so it\'s clear what each one does before you tap it.' },
+      { kind: 'improved', text: 'ReFocus is a good deal smaller to download. The icon font it used to ship weighed nearly 4 MB on its own; the new icons are drawn as part of the app.' },
+      { kind: 'fixed', text: 'Icons are the size they were meant to be. A quirk of the old icon font quietly forced every icon in the app to one size, so small icons sat oversized in their buttons and the big ones on the setup and celebration screens came out shrunken.' },
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-07-14',
     summary: 'A dictionary for your books, tidier notes, a way to start a round over, and updates you can install from inside the app.',

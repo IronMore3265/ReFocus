@@ -30,7 +30,7 @@ export function render() {
     <div class="accent-timer bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md flex flex-col items-center">
       <div class="w-full flex justify-between items-center mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Active Session</span>
-        <button data-nav="#/timer" class="text-secondary">${icon('arrow_forward')}</button>
+        <button data-nav="#/timer" class="text-secondary">${icon('forward')}</button>
       </div>
       <div data-ring-wrap class="relative">
         ${running ? '<div class="absolute inset-2 rounded-full border-2 border-accent-soft opacity-20 pulse-ring pointer-events-none"></div>' : ''}
@@ -52,7 +52,7 @@ export function render() {
     <button ${book ? `data-nav="#/book/${book.id}"` : 'data-nav="#/reading"'} class="text-left bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md active:bg-surface-bright transition-colors">
       <div class="flex justify-between items-start mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Currently Reading</span>
-        <div class="text-secondary">${icon('arrow_forward')}</div>
+        <div class="text-secondary">${icon('forward')}</div>
       </div>
       ${book ? `
       <div class="flex gap-gutter items-center">
@@ -74,7 +74,7 @@ export function render() {
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex justify-between items-start mb-stack-sm">
         <span class="text-label-md uppercase tracking-wider text-secondary">Next Task</span>
-        <button data-nav="#/tasks" class="text-secondary">${icon('arrow_forward')}</button>
+        <button data-nav="#/tasks" class="text-secondary">${icon('forward')}</button>
       </div>
       ${task ? `
       <div class="flex items-start gap-3">
@@ -82,7 +82,7 @@ export function render() {
         <button data-nav="#/task/${task.id}" class="flex flex-col text-left">
           <p class="text-body-md text-on-surface leading-snug">${esc(task.title)}</p>
           <div class="flex items-center gap-1 mt-2 ${dueLabel(task).cls === 'text-error' ? 'text-error' : 'text-accent-soft'}">
-            ${icon('schedule', 'text-[16px]')}
+            ${icon('clock', 'text-[16px]')}
             <span class="text-label-sm">${dueLabel(task).text}</span>
           </div>
         </button>

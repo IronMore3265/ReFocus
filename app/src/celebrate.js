@@ -5,7 +5,7 @@ import {
   TIERS, allTrackStatuses,
   currentAchievementLevels, getSeenAchievementLevels, setSeenAchievementLevels,
 } from './store.js';
-import { esc } from './ui.js';
+import { esc, icon } from './ui.js';
 
 // Only these collections feed achievement metrics (hours/streak derive from sessions).
 const RELEVANT_KEYS = new Set(['sessions', 'tasks', 'readingLog', 'books']);
@@ -32,7 +32,7 @@ function showNext() {
     <div class="relative flex flex-col items-center text-center px-8 pop-in">
       <div class="burst w-28 h-28 rounded-full flex items-center justify-center mb-6"
         style="--color-accent:${tier.color}; background:linear-gradient(145deg, ${tier.color}, color-mix(in srgb, ${tier.color} 55%, #000)); box-shadow:0 8px 28px color-mix(in srgb, ${tier.color} 50%, transparent)">
-        <span class="material-symbols-outlined icon-fill text-white text-[56px]">trophy</span>
+        ${icon('trophy', 'text-white text-[56px]')}
       </div>
       <h2 class="text-headline-lg-mobile text-white font-bold mb-1">${esc(title)}</h2>
       <p class="text-body-lg text-white/85">${esc(tier.name)} · ${esc(track.title)}</p>

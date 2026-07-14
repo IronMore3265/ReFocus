@@ -4,14 +4,19 @@ import {
   getSettings, setSettings,
 } from './store.js';
 import { applyTheme } from './theme.js';
+import { iconSvg } from './icons.js';
 
 // Re-render the current route (main.js re-renders on hashchange)
 export function rerender() {
   window.dispatchEvent(new HashChangeEvent('hashchange'));
 }
 
-export function icon(name, cls = '', fill = false) {
-  return `<span class="material-symbols-outlined ${fill ? 'icon-fill' : ''} ${cls}">${name}</span>`;
+// `solid` fills the glyph instead of stroking it. Lucide has no filled variants,
+// so it only reads well where the silhouette IS the shape — the flame, play/pause.
+// Anything drawn as open paths loses them to the fill (the trophy sheds its stem
+// and base); a filled Timer or ListChecks is a blob. Those use .icon-strong.
+export function icon(name, cls = '', solid = false) {
+  return iconSvg(name, `${solid ? 'icon-solid' : ''} ${cls}`);
 }
 
 export function esc(s) {
@@ -30,7 +35,7 @@ export function avatarEl(sizeCls = 'w-8 h-8') {
   if (p.name) {
     return `<span class="${sizeCls} rounded-full bg-accent text-on-primary flex items-center justify-center text-label-md font-bold">${esc(p.name[0].toUpperCase())}</span>`;
   }
-  return icon('account_circle');
+  return icon('user');
 }
 
 // ---------- top app bar for tab pages ----------
@@ -47,7 +52,7 @@ export function appHeader() {
         ${streak ? `
         <button data-nav="#/stats" aria-label="${streak} day streak"
           class="shrink-0 flex items-center gap-0.5 pl-1.5 pr-2 py-0.5 rounded-full bg-accent-tint text-accent-soft active:scale-95 transition-transform">
-          ${icon('local_fire_department', 'text-[16px]', true)}
+          ${icon('streak', 'text-[16px]', true)}
           <span class="text-label-sm font-bold">${streak}</span>
         </button>` : ''}
       </div>
@@ -64,7 +69,7 @@ export function subHeader(title, actionsHtml = '') {
   <header class="pt-safe fixed top-0 w-full z-40 bg-surface border-b border-surface-container">
     <div class="flex items-center gap-2 h-16 px-2">
       <button data-nav="back" class="p-3 rounded-full text-on-surface active:opacity-70 transition-opacity">
-        ${icon('arrow_back')}
+        ${icon('back')}
       </button>
       <h1 class="text-headline-md text-on-surface flex-grow truncate">${esc(title)}</h1>
       ${actionsHtml}
@@ -76,8 +81,8 @@ export function subHeader(title, actionsHtml = '') {
 const TABS = [
   { route: '#/home', iconName: 'home', label: 'Home' },
   { route: '#/timer', iconName: 'timer', label: 'Timer' },
-  { route: '#/reading', iconName: 'book_2', label: 'Reading' },
-  { route: '#/tasks', iconName: 'checklist', label: 'Tasks' },
+  { route: '#/reading', iconName: 'book', label: 'Reading' },
+  { route: '#/tasks', iconName: 'tasks', label: 'Tasks' },
 ];
 
 export function bottomNav(activeRoute) {
@@ -90,7 +95,7 @@ export function bottomNav(activeRoute) {
         <button data-nav="${t.route}" class="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-[transform,color] duration-200 ${
           active ? 'text-accent-soft font-bold' : 'text-secondary'
         }">
-          ${icon(t.iconName, `mb-1 ${active ? 'pop-in' : ''}`, active)}
+          ${icon(t.iconName, `mb-1 ${active ? 'icon-strong pop-in' : ''}`)}
           <span class="text-label-md ${active ? '' : 'font-normal'}">${t.label}</span>
         </button>`;
       }).join('')}
@@ -316,9 +321,9 @@ export function confirmSheet({ title, message, confirmLabel = 'Delete', onConfir
 // ---------- theme chooser ----------
 // Shared by Settings and onboarding; applies the theme live on tap.
 const THEMES = [
-  { id: 'light', icon: 'light_mode', label: 'Light' },
-  { id: 'dark', icon: 'dark_mode', label: 'Dark' },
-  { id: 'system', icon: 'brightness_auto', label: 'System' },
+  { id: 'light', icon: 'light', label: 'Light' },
+  { id: 'dark', icon: 'dark', label: 'Dark' },
+  { id: 'system', icon: 'theme-auto', label: 'System' },
 ];
 
 const themeBtnCls = (active) =>
@@ -368,6 +373,36 @@ export const inputCls =
 
 export function primaryBtn(label, attrs = '') {
   return `<button ${attrs} class="w-full py-4 rounded-full bg-accent text-on-primary text-label-md active:scale-[0.98] transition-transform">${esc(label)}</button>`;
+}
+
+// ---------- card + section buttons ----------
+// A row of same-sized grey glyphs can't say which one is destructive, so card
+// actions are worded instead of drawn: the label carries the meaning and the
+// tone carries the warning.
+const TONES = {
+  accent: 'text-accent-soft',
+  error: 'text-error',
+  muted: 'text-secondary',
+};
+
+export function textBtn(label, attrs = '', { tone = 'accent' } = {}) {
+  return `
+  <button type="button" ${attrs}
+    class="px-3 py-2 -my-1 rounded-lg text-label-md ${TONES[tone] || TONES.accent} active:bg-surface-container transition-colors">
+    ${esc(label)}
+  </button>`;
+}
+
+// Compact labelled pill for section headers — replaces the bare glyph buttons
+// that gave no hint of what they'd do.
+export function pillBtn(label, iconName, attrs = '') {
+  return `
+  <button type="button" ${attrs}
+    class="flex items-center gap-1.5 pl-2.5 pr-3.5 py-1.5 rounded-full border border-surface-container-highest
+           text-accent-soft text-label-md active:bg-accent-tint active:scale-95 transition-all">
+    ${icon(iconName, 'text-[16px]')}
+    ${esc(label)}
+  </button>`;
 }
 
 // ---------- duration stepper ----------
@@ -445,7 +480,7 @@ export function mountPresetChips(container, { getCurrent, onApply }) {
         ${esc(p.name)}
         <span class="opacity-70 font-normal">${p.focusMin}/${p.breakMin}</span>
         ${p.custom ? `<span data-preset-delete="${p.id}" role="button" aria-label="Delete ${esc(p.name)}"
-          class="material-symbols-outlined text-[14px] p-1 rounded-full opacity-70">close</span>` : ''}
+          class="p-1 rounded-full opacity-70">${icon('close', 'text-[14px]')}</span>` : ''}
       </button>`).join('')}
     </div>`;
   };

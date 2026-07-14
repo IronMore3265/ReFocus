@@ -8,13 +8,6 @@
   font-display: swap;
   src: url('./assets/fonts/manrope.woff2') format('woff2');
 }
-@font-face {
-  font-family: 'Material Symbols Outlined';
-  font-style: normal;
-  font-weight: 100 700;
-  font-display: block;
-  src: url('./assets/fonts/material-symbols.woff2') format('woff2');
-}
 
 /* ---------- Ember Serenity design tokens (from serene_monochrome/DESIGN.md) ---------- */
 @theme {
@@ -173,23 +166,41 @@ html, body {
   overflow-x: clip;
 }
 
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  user-select: none;
-}
-.material-symbols-outlined.icon-fill {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+/* ---------- Icons (Lucide, inlined as SVG by src/icons.js) ----------
+   Sized in em and stroked in currentColor, so an icon takes its size from
+   font-size and its colour from color — the same two levers the icon font used,
+   which is why the `text-[18px]` / `text-accent-soft` classes at the call sites
+   drive it. Stroke weight is deliberately light; this is the one knob for it.
+
+   These rules MUST stay inside @layer components. Tailwind puts its utilities in
+   @layer utilities, and an unlayered rule outranks any layered one at equal
+   specificity — so unlayered, the font-size below would beat every text-[Npx] at
+   the call sites and pin every icon in the app to one size. (That is exactly what
+   the icon font it replaced did: its unlayered `font-size: 24px` silently won
+   against text-[14px] and text-[48px] alike, and every icon rendered at 24px.)
+   Layered, utilities come last and win, which is what we want. */
+@layer components {
+  .icon {
+    font-size: 24px; /* default, for the call sites that don't ask for a size */
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    vertical-align: -0.125em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    user-select: none;
+  }
+  /* Selection weight — Lucide has no filled variants, so the active bottom-nav tab
+     thickens its stroke rather than filling (a filled Timer or ListChecks is a blob). */
+  .icon-strong { stroke-width: 2.25; }
+  /* True fill, only for icons whose silhouette IS the shape: flame, play/pause.
+     Not the trophy — its stem and base are open paths with no area, so a fill
+     drops them and leaves the cup floating. */
+  .icon-solid { fill: currentColor; stroke: none; }
 }
 
 /* Fixed headers/nav include the safe area; pages pad past them */
@@ -485,4 +496,18 @@ input[type='text'], input[type='number'], input[type='date'], input[type='time']
   border-color: var(--prio-fill);
   color: var(--prio-on);
   font-weight: 700;
+}
+
+/* ---------- Synonym chips ----------
+   Borrows the resting tone of a low-priority task pill, so a synonym reads as the
+   same weight of thing. Both the fill and the border are mixed with `transparent`
+   rather than a surface colour, which is what lets the chip sit on the tan vocab
+   card and on the paler dictionary sheet without being restyled for each. The
+   low-priority ramp inverts for dark mode on its own. */
+@layer components {
+  .synonym-chip {
+    background: color-mix(in srgb, var(--prio-low-fill) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--prio-low-fill) 45%, transparent);
+    color: var(--prio-low-ink);
+  }
 }

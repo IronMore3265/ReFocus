@@ -13,10 +13,10 @@ function taskRow(t) {
     <button data-nav="#/task/${t.id}" class="flex flex-col flex-grow text-left min-w-0 ${t.done ? 'opacity-60' : ''}">
       <span class="text-body-md text-on-surface leading-tight ${t.done ? 'line-through' : ''}">${esc(t.title)}</span>
       <span class="text-label-sm ${due.cls} mt-1 flex items-center gap-1">
-        ${t.priority === 'high' && !t.done ? icon('priority_high', 'text-[14px] text-accent-soft') : ''}${due.text}
+        ${t.priority === 'high' && !t.done ? icon('priority-high', 'text-[14px] text-accent-soft') : ''}${due.text}
       </span>
     </button>
-    ${icon('chevron_right', 'text-secondary-fixed-dim mt-1')}
+    ${icon('chevron-right', 'text-secondary-fixed-dim mt-1')}
   </div>`;
 }
 
@@ -56,9 +56,9 @@ export function render() {
       <p class="text-body-md text-secondary">Organize your focus for the day.</p>
     </div>
     ${todayTasks.length || upcoming.length ? `
-      ${section('Today', 'event', todayTasks)}
-      ${section('Upcoming', 'calendar_month', upcoming)}
-    ` : emptyState('checklist', 'All clear', 'Tap + to capture your first task.')}
+      ${section('Today', 'due', todayTasks)}
+      ${section('Upcoming', 'calendar', upcoming)}
+    ` : emptyState('tasks', 'All clear', 'Tap + to capture your first task.')}
   </main>
   ${fab('add-task')}
   ${bottomNav('#/tasks')}`;
@@ -83,7 +83,7 @@ export function openAddTask(onDone) {
       ${field('Due', `
         <button type="button" data-due-trigger class="${inputCls} w-full flex justify-between items-center text-left cursor-pointer">
           <span data-due-label class="text-on-surface">${dueButtonLabel(due)}</span>
-          ${icon('calendar_month', 'text-secondary')}
+          ${icon('calendar', 'text-secondary')}
         </button>`)}
       ${field('Priority', priorityPills(priority))}
       ${primaryBtn('Add Task', 'type="submit"')}

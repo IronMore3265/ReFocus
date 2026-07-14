@@ -4,7 +4,7 @@
 //
 // The API answers with an array of entries, each carrying its own phonetics and
 // meanings. We flatten that into one record per word:
-//   { word, phonetic, meanings: [{ partOfSpeech, definitions: [{definition, example}], synonyms }], synonyms }
+//   { word, phonetic, audio, meanings: [{ partOfSpeech, definitions: [{definition, example}], synonyms }], synonyms }
 
 const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
 
@@ -12,13 +12,31 @@ const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
 // failure — the caller shows it as "no definition", not as an error.
 export class WordNotFoundError extends Error {}
 
-function firstPhonetic(entries) {
-  for (const e of entries) {
-    if (e.phonetic) return e.phonetic;
-    const spoken = (e.phonetics || []).find((p) => p.text);
-    if (spoken) return spoken.text;
-  }
-  return '';
+// Some entries carry a protocol-relative audio URL.
+const normalise = (url) => (url.startsWith('//') ? `https:${url}` : url);
+
+// The spelling and the recording have to come from the *same* phonetics object.
+// A word like "bass" arrives as several entries — the fish and the sound — and
+// picking the IPA from one while picking the audio from another would show you
+// one word's pronunciation and play you the other's.
+//
+// So: prefer a phonetics element that has both text and a non-empty audio, and
+// only fall back to a text-only or audio-only one if no element has the pair.
+// (`audio: ""` is extremely common — the first element usually has no recording.)
+function pronunciation(entries) {
+  const all = entries.flatMap((e) => [
+    // An entry's top-level `phonetic` is a bare spelling with no audio of its own.
+    ...(e.phonetic ? [{ text: e.phonetic, audio: '' }] : []),
+    ...(e.phonetics || []),
+  ]);
+
+  const both = all.find((p) => p.text && p.audio);
+  if (both) return { phonetic: both.text, audio: normalise(both.audio) };
+
+  return {
+    phonetic: all.find((p) => p.text)?.text || '',
+    audio: normalise(all.find((p) => p.audio)?.audio || ''),
+  };
 }
 
 export async function lookupWord(rawWord) {
@@ -64,7 +82,7 @@ export async function lookupWord(rawWord) {
 
   return {
     word: entries[0].word || word,
-    phonetic: firstPhonetic(entries),
+    ...pronunciation(entries),
     meanings,
     synonyms,
   };

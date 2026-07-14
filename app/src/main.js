@@ -117,11 +117,11 @@ function openMenu() {
     </button>`;
   showSheet(`
     <h2 class="text-headline-md text-on-surface mb-4">ReFocus</h2>
-    ${item('#/stats', 'monitoring', 'Focus Stats')}
-    ${item('#/history', 'calendar_month', 'History')}
+    ${item('#/stats', 'stats', 'Focus Stats')}
+    ${item('#/history', 'calendar', 'History')}
     ${item('#/achievements', 'trophy', 'Achievements')}
-    ${item('#/shelf', 'collections_bookmark', 'Finished Shelf')}
-    ${item('#/changelog', 'auto_awesome', "What's New")}
+    ${item('#/shelf', 'shelf', 'Finished Shelf')}
+    ${item('#/changelog', 'sparkle', "What's New")}
     ${item('#/settings', 'settings', 'Settings')}
     <button data-nav="#/profile" data-close class="w-full flex items-center gap-4 px-2 py-4 border-b border-surface-container text-on-surface active:bg-surface-bright transition-colors">
       ${avatarEl('w-6 h-6')}

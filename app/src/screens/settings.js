@@ -133,7 +133,7 @@ export function render() {
             <span class="text-body-sm text-secondary">ReFocus chime</span>
           </div>
           <button data-action="preview" class="p-3 rounded-full border border-surface-container-highest text-accent-soft active:scale-95 transition-transform">
-            ${icon('play_arrow', '', true)}
+            ${icon('play', '', true)}
           </button>
         </div>
         <p class="text-label-sm text-secondary mt-3">${nativeTimer
@@ -169,7 +169,7 @@ export function render() {
       </button>
       <input data-import-file type="file" accept=".csv,text/csv,text/plain" class="hidden" />
       <button data-action="reset" class="w-full flex items-center gap-3 py-4 text-error border-t border-surface-container">
-        ${icon('restart_alt', 'text-error')}
+        ${icon('reset', 'text-error')}
         <span class="text-body-md font-semibold">Erase all data & start fresh</span>
       </button>
     </section>
@@ -177,14 +177,14 @@ export function render() {
     <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mt-gutter">
       <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">About</h2>
       <button data-action="check-updates" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
-        ${icon('system_update', 'text-secondary')}
+        ${icon('app-update', 'text-secondary')}
         <span class="text-body-md flex-grow text-left">Check for updates</span>
         <span data-update-status class="text-label-sm text-secondary shrink-0">v${esc(__APP_VERSION__)}</span>
       </button>
       <button data-nav="#/changelog" class="w-full flex items-center gap-3 py-4 text-on-surface border-t border-surface-container">
-        ${icon('auto_awesome', 'text-secondary')}
+        ${icon('sparkle', 'text-secondary')}
         <span class="text-body-md flex-grow text-left">What's new</span>
-        ${icon('chevron_right', 'text-secondary')}
+        ${icon('chevron-right', 'text-secondary')}
       </button>
     </section>
 
