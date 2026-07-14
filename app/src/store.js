@@ -117,8 +117,11 @@ export function setApifyToken(token) {
 
 // ---------- books ----------
 // book: { id, title, author, totalPages, currentPage, cover (data URI/URL | null),
-//         synopsis, notes: [{id, text, page, at}],
+//         synopsis, notes: [{id, text, page, at, updatedAt?}],
+//         vocab: [{id, word, phonetic, meanings, synonyms, page, at}],
 //         finished: bool, finishedAt, createdAt, updatedAt }
+// `notes` and `vocab` are nested in the book rather than being collections of
+// their own — they're only ever read through their book.
 export function getBooks() {
   return load('books', []);
 }
@@ -132,7 +135,7 @@ export function addBook({ title, author, totalPages, currentPage = 0, cover = nu
   const books = getBooks();
   const book = {
     id: uid(), title, author, totalPages: Number(totalPages) || 0,
-    currentPage: Number(currentPage) || 0, cover, synopsis, notes: [], finished: false,
+    currentPage: Number(currentPage) || 0, cover, synopsis, notes: [], vocab: [], finished: false,
     finishedAt: null, createdAt: Date.now(), updatedAt: Date.now(),
   };
   books.push(book);
@@ -156,16 +159,60 @@ export function updateBook(id, patch) {
 export function deleteBook(id) {
   saveBooks(getBooks().filter((b) => b.id !== id));
 }
+// ---------- book notes ----------
+// Books saved before notes/vocab existed have neither key — read them through these.
+export function bookNotes(book) {
+  return book?.notes || [];
+}
+export function bookVocab(book) {
+  return book?.vocab || [];
+}
+
 export function addBookNote(id, text, page) {
   const book = getBook(id);
   if (!book) return;
-  book.notes.push({ id: uid(), text, page: page || book.currentPage, at: Date.now() });
-  updateBook(id, { notes: book.notes });
+  // Page 0 is a real page (a foreword, an epigraph), so only an absent page
+  // falls back to where the reader is.
+  const at = Number.isFinite(Number(page)) ? Number(page) : book.currentPage;
+  updateBook(id, { notes: [...bookNotes(book), { id: uid(), text, page: at, at: Date.now() }] });
+}
+export function updateBookNote(bookId, noteId, patch) {
+  const book = getBook(bookId);
+  if (!book) return;
+  updateBook(bookId, {
+    notes: bookNotes(book).map((n) => (n.id === noteId ? { ...n, ...patch, updatedAt: Date.now() } : n)),
+  });
 }
 export function deleteBookNote(bookId, noteId) {
   const book = getBook(bookId);
   if (!book) return;
-  updateBook(bookId, { notes: book.notes.filter((n) => n.id !== noteId) });
+  updateBook(bookId, { notes: bookNotes(book).filter((n) => n.id !== noteId) });
+}
+
+// ---------- book vocabulary ----------
+// Every dictionary lookup is logged against the book it was made from. Looking
+// the same word up twice refreshes the existing entry instead of stacking a
+// duplicate, and moves it back to the top of the list.
+export function addBookVocab(bookId, { word, phonetic = '', meanings = [], synonyms = [], page }) {
+  const book = getBook(bookId);
+  if (!book) return null;
+  const key = String(word).trim().toLowerCase();
+  const existing = bookVocab(book).find((v) => v.word.toLowerCase() === key);
+  const entry = {
+    id: existing?.id || uid(),
+    word, phonetic, meanings, synonyms,
+    page: Number.isFinite(Number(page)) ? Number(page) : book.currentPage,
+    at: Date.now(),
+  };
+  updateBook(bookId, {
+    vocab: [...bookVocab(book).filter((v) => v.id !== entry.id), entry],
+  });
+  return entry;
+}
+export function deleteBookVocab(bookId, vocabId) {
+  const book = getBook(bookId);
+  if (!book) return;
+  updateBook(bookId, { vocab: bookVocab(book).filter((v) => v.id !== vocabId) });
 }
 export function currentlyReading() {
   return getBooks()
@@ -256,6 +303,15 @@ export function updateSession(id, patch) {
   if (i === -1) return;
   sessions[i] = { ...sessions[i], ...patch };
   save('sessions', sessions);
+}
+
+// Deleting a session really does take those minutes back out of the totals the
+// streak and the achievement tracks are computed from — History warns about it.
+export function deleteSession(id) {
+  save('sessions', getSessions().filter((s) => s.id !== id));
+}
+export function deleteReadingLogEntry(id) {
+  save('readingLog', getReadingLog().filter((r) => r.id !== id));
 }
 
 export function sessionsOn(day) {

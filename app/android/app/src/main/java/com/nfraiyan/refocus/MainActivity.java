@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     // src/native/timer-service.js rejects into its catch, and the timer silently has
     // no notification, no controls and no end-of-phase alarm.
     registerPlugin(TimerServicePlugin.class);
+    registerPlugin(UpdaterPlugin.class);
 
     super.onCreate(savedInstanceState); // BridgeActivity builds the bridge + WebView here
 

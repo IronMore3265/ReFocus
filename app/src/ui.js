@@ -149,6 +149,40 @@ export function emptyState(iconName, title, hint) {
   </div>`;
 }
 
+// ---------- collapsible long text ----------
+// Long text clamped to a Show more/less toggle that hides itself when the text
+// fits anyway. Whether it fits can only be measured in the document, so every
+// clampedText() needs a bindClampToggles(scope) once its screen has mounted.
+//
+// `clampCls` has to arrive as a whole class name ('line-clamp-5', not a built
+// one) — Tailwind extracts candidates from the source text, so a class it never
+// sees spelled out is a class it never generates.
+export function clampedText(text, { clampCls = 'line-clamp-5', cls = '' } = {}) {
+  return `
+  <div data-clamp="${clampCls}">
+    <p data-clamp-text class="${cls} whitespace-pre-line ${clampCls}">${esc(text)}</p>
+    <button type="button" data-clamp-toggle class="text-label-md text-accent-soft mt-2">Show more</button>
+  </div>`;
+}
+
+export function bindClampToggles(scope) {
+  scope.querySelectorAll('[data-clamp]').forEach((wrap) => {
+    const textEl = wrap.querySelector('[data-clamp-text]');
+    const btn = wrap.querySelector('[data-clamp-toggle]');
+    if (!textEl || !btn) return;
+    // An unclamped scrollHeight no taller than the box means nothing is being cut.
+    if (textEl.scrollHeight <= textEl.clientHeight + 2) {
+      btn.classList.add('hidden');
+      return;
+    }
+    const clampCls = wrap.getAttribute('data-clamp');
+    btn.addEventListener('click', () => {
+      const clamped = textEl.classList.toggle(clampCls);
+      btn.textContent = clamped ? 'Show more' : 'Show less';
+    });
+  });
+}
+
 // ---------- modal bottom sheet ----------
 // Open sheets, top-most last — lets the Android back button pop them in order.
 const openSheets = [];
@@ -202,7 +236,12 @@ export function showSheet(innerHtml) {
 
   // --- swipe down to dismiss ---
   // Only when the sheet is scrolled to the top and the touch doesn't start
-  // inside a nested scroller (the date/time wheel columns scroll themselves).
+  // inside something that handles its own vertical drag: the date/time wheel
+  // columns scroll themselves, and a textarea scrolls its own text — dragging
+  // down inside one used to pull the whole sheet away and lose what was typed.
+  // The sheet can still be dismissed by the backdrop, the handle, a drag on any
+  // other part of it, and the hardware back button.
+  const NO_DRAG = '.wheel-column, textarea, input, select, [data-no-drag]';
   let startY = null;
   let startT = 0;
   let dragging = false;
@@ -210,7 +249,7 @@ export function showSheet(innerHtml) {
   sheet.addEventListener('touchstart', (e) => {
     startY = null;
     if (closed || sheet.scrollTop > 0) return;
-    if (e.target.closest('.wheel-column')) return;
+    if (e.target.closest(NO_DRAG)) return;
     startY = e.touches[0].clientY;
     startT = Date.now();
     dragging = false;

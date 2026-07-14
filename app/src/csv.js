@@ -16,7 +16,7 @@ const SECTIONS = {
   books: {
     columns: [col('id'), col('title'), col('author'), col('totalPages', 'n'), col('currentPage', 'n'),
       col('cover', 'sn'), col('synopsis'), col('finished', 'b'), col('finishedAt', 'n'),
-      col('createdAt', 'n'), col('updatedAt', 'n'), col('notes', 'j')],
+      col('createdAt', 'n'), col('updatedAt', 'n'), col('notes', 'j'), col('vocab', 'j')],
     get: getBooks,
   },
   tasks: {
