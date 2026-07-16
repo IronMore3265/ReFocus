@@ -13,6 +13,10 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Dark status bar icons for the ~200ms of cold start before JS runs and
+             SystemBarsPlugin takes over. Light is the more common theme, so this is
+             the better guess to flash. -->
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
 

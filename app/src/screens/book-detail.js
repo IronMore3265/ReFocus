@@ -3,7 +3,7 @@ import {
   getBook, updateBook, deleteBook,
   addBookNote, updateBookNote, deleteBookNote, bookNotes,
   addBookVocab, updateBookVocab, deleteBookVocab, bookVocab,
-  getReadingLog, formatDate,
+  getReadingLog, formatDate, dayKey,
 } from '../store.js';
 import {
   subHeader, icon, esc, progressBar, showSheet, confirmSheet,
@@ -118,9 +118,113 @@ function vocabCardHtml(v) {
   </div>`;
 }
 
+// How far back the history chart looks. Two weeks is enough to see a rhythm —
+// whether you read most days or in weekend bursts — without the bars going hairline.
+const CHART_DAYS = 14;
+// The reading list shows this many rows before folding the rest behind a button.
+const LOG_PREVIEW = 5;
+
+const pagesIn = (r) => Math.max(0, r.to - r.from);
+
+// Buckets the log into one entry per day for the last CHART_DAYS, newest last.
+// Keyed off `at` rather than `r.day`: rows written before that field existed
+// don't have it, and a book read a year ago would silently bucket into nothing.
+function chartDays(log) {
+  const days = [];
+  const cursor = new Date();
+  for (let i = CHART_DAYS - 1; i >= 0; i--) {
+    const d = new Date(cursor);
+    d.setDate(d.getDate() - i);
+    days.push({ key: dayKey(d), pages: 0 });
+  }
+  const byKey = new Map(days.map((d) => [d.key, d]));
+  for (const r of log) {
+    const bucket = byKey.get(dayKey(r.at));
+    if (bucket) bucket.pages += pagesIn(r);
+  }
+  return days;
+}
+
+function historyHtml(log) {
+  if (!log.length) {
+    return `
+    <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md mb-stack-md">
+      <h2 class="text-headline-md text-on-surface mb-stack-sm">Reading History</h2>
+      <p class="text-body-sm text-secondary">Progress updates will appear here.</p>
+    </section>`;
+  }
+
+  // The stats read the whole log; only the chart is windowed. "Best day" over two
+  // weeks would quietly forget the afternoon you read 90 pages.
+  const totalPages = log.reduce((s, r) => s + pagesIn(r), 0);
+  const perDay = new Map();
+  for (const r of log) {
+    const k = dayKey(r.at);
+    perDay.set(k, (perDay.get(k) || 0) + pagesIn(r));
+  }
+  const bestDay = Math.max(...perDay.values());
+
+  const days = chartDays(log);
+  const windowTotal = days.reduce((s, d) => s + d.pages, 0);
+  const max = Math.max(1, ...days.map((d) => d.pages));
+
+  const stat = (label, value) => `
+    <div class="flex flex-col">
+      <span class="text-label-md uppercase tracking-wider text-secondary">${label}</span>
+      <span class="text-headline-md text-on-surface">${value}</span>
+    </div>`;
+
+  const chart = windowTotal
+    ? `
+    <div class="flex items-end justify-between gap-1 h-24 mb-2">
+      ${days.map((d, i) => `
+      <div class="flex-1 h-full flex items-end">
+        <div class="rise w-full rounded-t ${d.pages ? 'bg-accent' : 'bg-surface-container-highest'}"
+          style="height:${Math.max(4, Math.round((d.pages / max) * 100))}%; --rise-delay:${(i * 0.03).toFixed(2)}s"
+          title="${d.pages} pages"></div>
+      </div>`).join('')}
+    </div>
+    <div class="flex justify-between text-label-sm text-secondary mb-stack-md">
+      <span>${CHART_DAYS} days ago</span>
+      <span>Today</span>
+    </div>`
+    : '<p class="text-body-sm text-secondary mb-stack-md">No pages logged in the last 14 days.</p>';
+
+  const rows = log.map((r, i) => `
+    <div class="flex justify-between items-center py-3 border-b border-surface-container ${i >= LOG_PREVIEW ? 'hidden' : ''}" ${i >= LOG_PREVIEW ? 'data-log-extra' : ''}>
+      <span class="text-body-md text-on-surface">${pagesIn(r)} pages</span>
+      <span class="text-body-sm text-secondary">p. ${r.from} → ${r.to} · ${formatDate(r.at)}</span>
+    </div>`).join('');
+
+  return `
+  <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md mb-stack-md">
+    <h2 class="text-headline-md text-on-surface mb-stack-sm">Reading History</h2>
+    <div class="grid grid-cols-3 gap-2 mb-stack-md">
+      ${stat('Pages', totalPages)}
+      ${stat('Days read', perDay.size)}
+      ${stat('Best day', bestDay)}
+    </div>
+    ${chart}
+    <div class="flex flex-col">${rows}</div>
+    ${log.length > LOG_PREVIEW
+      ? `<div class="pt-2">${textBtn(`Show all ${log.length} updates`, 'data-log-expand')}</div>`
+      : ''}
+  </section>`;
+}
+
+// Which of the two lists is showing. Module scope, so it survives the render+mount
+// cycle a rerender() runs — the module is a singleton. Scoped to a book id so
+// opening a different one doesn't inherit the last one's tab.
+let activeTab = 'notes';
+let tabBookId = null;
+
 export function render(id) {
   const book = getBook(id);
   if (!book) return `${subHeader('Book')}<main class="pt-page px-margin-mobile">${emptyState('error', 'Book not found', 'It may have been deleted.')}</main>`;
+  if (tabBookId !== id) {
+    tabBookId = id;
+    activeTab = 'notes';
+  }
 
   const pct = book.totalPages ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
   const log = getReadingLog().filter((r) => r.bookId === id).sort((a, b) => b.at - a.at);
@@ -170,38 +274,30 @@ export function render(id) {
       ${clampedText(book.synopsis, { clampCls: 'line-clamp-4', cls: 'text-body-md text-on-surface' })}
     </section>` : ''}
 
-    <section class="mb-stack-md">
-      <div class="flex justify-between items-center mb-stack-sm">
-        <h2 class="text-headline-md text-on-surface">Notes &amp; Quotes</h2>
-        ${pillBtn('Add note', 'add', 'data-action="add-note"')}
+    ${historyHtml(log)}
+
+    <section>
+      <div class="bg-surface-container-low rounded-full p-1 flex mb-stack-md">
+        ${[['notes', `Notes (${notes.length})`], ['vocab', `Vocabulary (${vocab.length})`]].map(([key, label]) => `
+        <button data-tab="${key}" class="flex-1 py-2 rounded-full text-label-md transition-colors
+          ${activeTab === key ? 'bg-accent text-on-primary' : 'text-secondary'}">${label}</button>`).join('')}
       </div>
-      <div class="flex flex-col gap-4">
+
+      <div class="flex justify-end mb-stack-sm">
+        <span data-tab-pane="notes" class="${activeTab === 'notes' ? '' : 'hidden'}">${pillBtn('Add note', 'add', 'data-action="add-note"')}</span>
+        <span data-tab-pane="vocab" class="${activeTab === 'vocab' ? '' : 'hidden'}">${pillBtn('Look up', 'dictionary', 'data-action="lookup"')}</span>
+      </div>
+
+      <div data-tab-pane="notes" class="flex flex-col gap-4 ${activeTab === 'notes' ? '' : 'hidden'}">
         ${notes.length
           ? notes.map(noteCardHtml).join('')
           : '<p class="text-body-sm text-secondary">No notes yet — capture a thought or a quote.</p>'}
       </div>
-    </section>
 
-    <section class="mb-stack-md">
-      <div class="flex justify-between items-center mb-stack-sm">
-        <h2 class="text-headline-md text-on-surface">Vocabulary</h2>
-        ${pillBtn('Look up', 'dictionary', 'data-action="lookup"')}
-      </div>
-      <div class="flex flex-col gap-4">
+      <div data-tab-pane="vocab" class="flex flex-col gap-4 ${activeTab === 'vocab' ? '' : 'hidden'}">
         ${vocab.length
           ? vocab.map(vocabCardHtml).join('')
           : '<p class="text-body-sm text-secondary">Look up a word you hit while reading — it\'s saved here with its definition.</p>'}
-      </div>
-    </section>
-
-    <section>
-      <h2 class="text-headline-md text-on-surface mb-stack-sm">Reading History</h2>
-      <div class="flex flex-col">
-        ${log.length ? log.map((r) => `
-        <div class="flex justify-between items-center py-3 border-b border-surface-container">
-          <span class="text-body-md text-on-surface">${r.to - r.from} pages</span>
-          <span class="text-body-sm text-secondary">p. ${r.from} → ${r.to} · ${formatDate(r.at)}</span>
-        </div>`).join('') : '<p class="text-body-sm text-secondary">Progress updates will appear here.</p>'}
       </div>
     </section>
   </main>`;
@@ -254,6 +350,7 @@ function openDictionarySheet(bookId) {
       const saved = addBookVocab(book.id, { ...entry, page: Number(pageInput.value) });
       result.innerHTML = `
         ${entryDetailHtml(entry)}
+        ${entry.notice ? `<p class="text-label-sm text-error mt-3">${esc(entry.notice)}</p>` : ''}
         <p class="text-label-sm text-accent-soft flex items-center gap-1 mt-4 pt-3 border-t border-surface-container">
           ${icon('saved', 'text-[16px]')} Saved to this book's vocabulary at p. ${saved.page}
         </p>`;
@@ -338,13 +435,83 @@ export function mount(root, id) {
 
   bindClampToggles(root);
 
+  // --- tabs ---
+  // Both panes are always in the DOM and one is hidden, rather than rendering only
+  // the active one: the handlers further down query for [data-action="add-note"]
+  // and [data-action="lookup"] unconditionally, and a tab that omitted one would
+  // throw mid-mount and silently kill every listener after it.
+  //
+  // Switching toggles `hidden` instead of calling rerender(), which scrolls to top
+  // — the tabs sit well down the page and every tap would fling you back up.
+  root.querySelectorAll('[data-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.getAttribute('data-tab');
+      root.querySelectorAll('[data-tab]').forEach((b) => {
+        const on = b.getAttribute('data-tab') === activeTab;
+        b.classList.toggle('bg-accent', on);
+        b.classList.toggle('text-on-primary', on);
+        b.classList.toggle('text-secondary', !on);
+      });
+      root.querySelectorAll('[data-tab-pane]').forEach((pane) => {
+        pane.classList.toggle('hidden', pane.getAttribute('data-tab-pane') !== activeTab);
+      });
+      // Clamped text in a hidden pane measured 0x0 and lost its toggle; now that
+      // it has a size, let it decide again.
+      bindClampToggles(root);
+    });
+  });
+
+  root.querySelector('[data-log-expand]')?.addEventListener('click', (e) => {
+    root.querySelectorAll('[data-log-extra]').forEach((row) => row.classList.remove('hidden'));
+    e.target.closest('button').remove();
+  });
+
   root.querySelector('[data-action="update-page"]')?.addEventListener('click', () => {
+    // The slider starts at 0, not at the current page: dragging is also how you
+    // walk back an over-typed number. Nothing is logged when the page moves
+    // backwards (updateBook only logs an advance), so the history stays honest.
     const { el, close } = showSheet(`
       <h2 class="text-headline-md text-on-surface mb-4">Update Progress</h2>
       <form data-form>
-        ${field(`Current page (of ${book.totalPages})`, `<input name="page" type="number" min="${book.currentPage}" max="${book.totalPages}" value="${book.currentPage}" required class="${inputCls}" autofocus />`)}
+        <p class="text-center mb-1">
+          <span data-page-readout class="text-headline-md text-on-surface"></span>
+        </p>
+        <p data-page-pct class="text-label-md text-accent-soft text-center mb-4"></p>
+        <div class="flex items-center gap-3 mb-6">
+          <button type="button" data-step="-1" aria-label="Previous page"
+            class="w-10 h-10 shrink-0 rounded-full border border-surface-container-highest text-on-surface flex items-center justify-center active:scale-90 transition-transform">${icon('remove')}</button>
+          <input data-page-range name="page" type="range" min="0" max="${book.totalPages}" step="1"
+            value="${book.currentPage}" class="page-slider flex-grow" />
+          <button type="button" data-step="1" aria-label="Next page"
+            class="w-10 h-10 shrink-0 rounded-full border border-surface-container-highest text-on-surface flex items-center justify-center active:scale-90 transition-transform">${icon('add')}</button>
+        </div>
         ${primaryBtn('Save', 'type="submit"')}
       </form>`);
+
+    const range = el.querySelector('[data-page-range]');
+    const readout = el.querySelector('[data-page-readout]');
+    const pct = el.querySelector('[data-page-pct]');
+
+    const paint = () => {
+      const page = Number(range.value);
+      const p = book.totalPages ? Math.round((page / book.totalPages) * 100) : 0;
+      readout.textContent = `${page} of ${book.totalPages}`;
+      pct.textContent = `${p}%`;
+      range.style.setProperty('--fill', `${p}%`);
+    };
+    range.addEventListener('input', paint);
+    paint();
+
+    // The −/+ buttons drive the range and let its own `input` handler do the
+    // painting, so there is only ever one place the readout is written.
+    el.querySelectorAll('[data-step]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const next = Number(range.value) + Number(btn.getAttribute('data-step'));
+        range.value = String(Math.max(0, Math.min(book.totalPages, next)));
+        range.dispatchEvent(new Event('input'));
+      });
+    });
+
     el.querySelector('[data-form]').addEventListener('submit', (e) => {
       e.preventDefault();
       const page = Math.min(book.totalPages, Number(new FormData(e.target).get('page')) || 0);

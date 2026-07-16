@@ -22,6 +22,24 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
+### API keys
+
+`app/.env` is gitignored, so a fresh clone builds without any keys. Everything still
+works — each key only widens or speeds up a feature that has a free fallback:
+
+| Variable | Without it |
+| --- | --- |
+| `VITE_GOOGLE_BOOKS_KEY` | Book search still runs keyless, on a lower quota |
+| `VITE_MW_DICT_KEY` | No Merriam-Webster pronunciation for words the free dictionary lacks audio for, and no fallback definition when it 404s |
+| `VITE_MW_THES_KEY` | No Merriam-Webster synonyms when the free dictionary returns none |
+
+Merriam-Webster keys are free from [dictionaryapi.com](https://dictionaryapi.com), one
+per reference (Collegiate Dictionary and Collegiate Thesaurus are separate products
+with separate keys), capped at 1000 calls/key/day. A `VITE_` var is inlined into the
+bundle and is extractable from the APK — `.env` keeps keys out of git, it does not
+make them secret. Settings → Dictionary lets any user paste their own key over the
+built-in one.
+
 ## Building the APK
 
 Requires JDK 21 (`JAVA_HOME`) and Android SDK (`ANDROID_HOME=C:\Android\sdk`) — both already configured as user environment variables on this machine.

@@ -4,19 +4,42 @@
 // This is the in-app copy. The GitHub release notes for each version say the
 // same things in the same voice, because the update sheet shows them verbatim.
 //
+// One line per change — this is a list you skim, not prose you read. Lead with
+// the thing that changed, and stop. If a point needs a second sentence to explain
+// itself, it's either the wrong point or two points. Small fixes nobody was
+// waiting on don't each earn a line; they collect into a single "minor bug fixes
+// and quality-of-life improvements" at the end of Fixed.
+//
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.0',
+    date: '2026-07-17',
+    summary: 'A book page you can scan, subtasks you can fix and reorder, medals worth earning, and a status bar that follows your theme.',
+    changes: [
+      { kind: 'new', text: 'Reading history now opens a book, with a two-week chart and your totals.' },
+      { kind: 'new', text: 'Set your page with a slider — drag either way to fix a number you got wrong.' },
+      { kind: 'new', text: 'Notes and Vocabulary are now tabs, so a long word list stops burying the page.' },
+      { kind: 'new', text: 'Subtasks can be edited, added with the + button, and reordered with arrows.' },
+      { kind: 'new', text: 'Low-priority tasks show a double-down arrow, mirroring high priority.' },
+      { kind: 'new', text: 'Word lookups fall back to Merriam-Webster for pronunciation, synonyms, and words the free dictionary has never heard of.' },
+      { kind: 'improved', text: 'Achievement medals are now hexagons lit with their tier colour, legible in both themes.' },
+      { kind: 'fixed', text: 'The status and navigation bars follow your theme instead of always being light.' },
+      { kind: 'fixed', text: 'Tapping anywhere on a task opens it, not just the title.' },
+      { kind: 'fixed', text: 'Minor bug fixes and quality-of-life improvements.' },
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-07-14',
-    summary: 'Hear a word said out loud, pin it to the page you actually met it on, and a lighter, sharper set of icons everywhere.',
+    summary: 'Hear a word said out loud, pin it to the page you met it on, and a lighter set of icons everywhere.',
     changes: [
-      { kind: 'new', text: 'Hear how a word is said. Tap the speaker on any word — in the dictionary or in your saved vocabulary — and ReFocus plays the dictionary\'s own recording. Where there isn\'t one, your phone reads the word out instead, so the button works on every word, including the ones you saved before this update.' },
-      { kind: 'new', text: 'Set the page when you look a word up. The field starts at the page you\'ve saved, but where you\'re actually reading is rarely the last page you told the app about. You can also fix the page on a word you already saved, with Edit page.' },
-      { kind: 'improved', text: 'Removing a word from your vocabulary now asks first, the way deleting a note already did — a mistapped Remove no longer costs you the word.' },
-      { kind: 'improved', text: 'Notes and saved words now say Edit and Delete in words rather than as bare icons, so it\'s clear what each one does before you tap it.' },
-      { kind: 'improved', text: 'ReFocus is a good deal smaller to download. The icon font it used to ship weighed nearly 4 MB on its own; the new icons are drawn as part of the app.' },
-      { kind: 'fixed', text: 'Icons are the size they were meant to be. A quirk of the old icon font quietly forced every icon in the app to one size, so small icons sat oversized in their buttons and the big ones on the setup and celebration screens came out shrunken.' },
+      { kind: 'new', text: 'Hear how a word is said — tap the speaker, with your phone\'s voice as backup.' },
+      { kind: 'new', text: 'Set the page when you look a word up, and fix it later with Edit page.' },
+      { kind: 'improved', text: 'Removing a word from your vocabulary now asks first.' },
+      { kind: 'improved', text: 'Notes and saved words say Edit and Delete in words rather than bare icons.' },
+      { kind: 'improved', text: 'ReFocus is a good deal smaller to download — 4.7 MB, down from 8.6 MB.' },
+      { kind: 'fixed', text: 'Icons are the size they were meant to be — the old icon font had forced them all to one size.' },
     ],
   },
   {
@@ -24,17 +47,15 @@ export const CHANGELOG = [
     date: '2026-07-14',
     summary: 'A dictionary for your books, tidier notes, a way to start a round over, and updates you can install from inside the app.',
     changes: [
-      { kind: 'new', text: 'Look up a word without leaving your book. Every word you look up is kept with its definition and synonyms in that book\'s own Vocabulary list, so you can come back to it later.' },
-      { kind: 'new', text: 'You can now edit a note after saving it — no more deleting and retyping to fix a typo.' },
-      { kind: 'new', text: 'End a round and start it over from the first session. It only clears the round counter; the focus sessions you already finished stay in your history and stats.' },
-      { kind: 'new', text: 'Delete entries from your history, one at a time or several at once with Select.' },
-      { kind: 'new', text: 'Check for updates from Settings. If there\'s a new version, ReFocus can download and install it for you — and this page tells you what changed.' },
-      { kind: 'improved', text: 'Notes are easier to tell apart at a glance, and a long quote now folds down to a few lines with a Show more link instead of pushing the rest of the page away.' },
-      { kind: 'improved', text: 'On the timer, Skip now looks like the button it is, rather than blending in with the Sessions and Break read-outs beside it.' },
-      { kind: 'fixed', text: 'Writing a long note no longer fights you: scrolling through what you\'ve typed used to drag the whole sheet down and throw the note away. The keyboard also stops covering the box you\'re typing in.' },
-      { kind: 'fixed', text: 'The Break tile on the timer now shows your new break length as soon as you change it, instead of appearing stuck at 5 minutes until you left the screen and came back.' },
-      { kind: 'fixed', text: 'The start button no longer changes size as its label switches between Start Focus, Pause, Resume and Start Break.' },
-      { kind: 'fixed', text: 'Line breaks you type into a note are kept instead of being flattened into one paragraph.' },
+      { kind: 'new', text: 'Look up a word without leaving your book — it\'s saved to that book\'s Vocabulary.' },
+      { kind: 'new', text: 'Edit a note after saving it.' },
+      { kind: 'new', text: 'End a round and start over from the first session, keeping the sessions you finished.' },
+      { kind: 'new', text: 'Delete history entries, one at a time or several at once with Select.' },
+      { kind: 'new', text: 'Check for updates from Settings, and read what changed before you install.' },
+      { kind: 'improved', text: 'Long quotes fold down to a Show more link instead of pushing the page away.' },
+      { kind: 'improved', text: 'On the timer, Skip now looks like the button it is.' },
+      { kind: 'fixed', text: 'Writing a long note no longer throws it away when you scroll, or hides the box behind the keyboard.' },
+      { kind: 'fixed', text: 'Minor bug fixes and quality-of-life improvements.' },
     ],
   },
   {
@@ -42,12 +63,12 @@ export const CHANGELOG = [
     date: '2026-07-12',
     summary: 'The first complete ReFocus: a focus timer, your reading, and your tasks in one place.',
     changes: [
-      { kind: 'new', text: 'A pomodoro timer that keeps running when you leave the app, with controls and a chime in the notification so a session ends on time even with your phone in your pocket.' },
-      { kind: 'new', text: 'A reading shelf: add books by searching for them, track the page you\'re on, and keep notes and quotes against each one.' },
+      { kind: 'new', text: 'A pomodoro timer that keeps running — with controls and a chime — when you leave the app.' },
+      { kind: 'new', text: 'A reading shelf: search for books, track your page, keep notes and quotes.' },
       { kind: 'new', text: 'Tasks with due dates, priorities and subtasks.' },
       { kind: 'new', text: 'Stats, a day-by-day history, streaks, and achievements that tier up as you go.' },
-      { kind: 'new', text: 'Light, dark and system themes, chosen during a short setup when you first open the app.' },
-      { kind: 'new', text: 'Everything stays on your device. Export a CSV backup at any time to keep it safe or move it to another phone.' },
+      { kind: 'new', text: 'Light, dark and system themes.' },
+      { kind: 'new', text: 'Everything stays on your device, with CSV backup to keep it safe or move it.' },
     ],
   },
 ];

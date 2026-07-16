@@ -1,5 +1,9 @@
 // Settings — appearance, timer defaults, alerts, data management.
-import { getSettings, setSettings, resetAllData, restoreAll, todayKey, getApifyToken, setApifyToken } from '../store.js';
+import {
+  getSettings, setSettings, resetAllData, restoreAll, todayKey,
+  getApifyToken, setApifyToken,
+  getMwDictKey, setMwDictKey, getMwThesKey, setMwThesKey,
+} from '../store.js';
 import { exportCsv, importCsv, deliverCsv } from '../csv.js';
 import { refreshIdleTimer } from '../engine.js';
 import { playChime } from '../notify.js';
@@ -153,6 +157,25 @@ export function render() {
         class="${inputCls} mb-4" placeholder="apify_api_…" />
     </section>
 
+    <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2 mb-gutter">
+      <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">Dictionary</h2>
+      <p class="text-body-sm text-secondary py-3">
+        Word lookups use a free dictionary, topped up with Merriam-Webster for pronunciation
+        and synonyms. ReFocus ships with keys — paste your own only if lookups start
+        reporting the daily limit. Free keys come from dictionaryapi.com.
+      </p>
+      <label class="block mb-3">
+        <span class="text-label-md text-secondary block mb-2">Collegiate Dictionary key</span>
+        <input data-mw-dict-key type="password" autocomplete="off" value="${esc(getMwDictKey())}"
+          class="${inputCls}" placeholder="Using the built-in key" />
+      </label>
+      <label class="block mb-4">
+        <span class="text-label-md text-secondary block mb-2">Collegiate Thesaurus key</span>
+        <input data-mw-thes-key type="password" autocomplete="off" value="${esc(getMwThesKey())}"
+          class="${inputCls}" placeholder="Using the built-in key" />
+      </label>
+    </section>
+
     <section class="bg-surface-container-lowest border border-surface-container-high rounded-xl px-stack-md py-2">
       <h2 class="text-label-md uppercase tracking-wider text-secondary pt-4 pb-1">Data Management</h2>
       <p class="text-body-sm text-secondary py-3">
@@ -234,6 +257,14 @@ export function mount(root) {
   // --- book search: Apify token ---
   root.querySelector('[data-apify-token]').addEventListener('change', (e) => {
     setApifyToken(e.target.value.trim());
+  });
+
+  // --- dictionary: Merriam-Webster keys (blank falls back to the built-in) ---
+  root.querySelector('[data-mw-dict-key]').addEventListener('change', (e) => {
+    setMwDictKey(e.target.value.trim());
+  });
+  root.querySelector('[data-mw-thes-key]').addEventListener('change', (e) => {
+    setMwThesKey(e.target.value.trim());
   });
 
   // --- data management ---

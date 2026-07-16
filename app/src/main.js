@@ -97,6 +97,11 @@ function render() {
 document.addEventListener('click', (e) => {
   const nav = e.target.closest('[data-nav]');
   if (!nav) return;
+  // A control nested inside a navigable row owns its own tap — the task row carries
+  // data-nav so the whole box is tappable, but its checkbox must toggle without
+  // navigating out from under you.
+  const hit = e.target.closest('button, input, select, textarea, a, [role="button"]');
+  if (hit && hit !== nav && nav.contains(hit)) return;
   const target = nav.getAttribute('data-nav');
   if (target === 'back') {
     if (history.length > 1) history.back();

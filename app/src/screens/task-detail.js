@@ -43,15 +43,21 @@ export function render(id) {
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <span class="text-label-md uppercase tracking-wider text-secondary block mb-2">Subtasks</span>
-      ${t.subtasks.map((st) => `
-      <div class="flex items-center gap-3 py-2 border-b border-surface-container">
+      ${t.subtasks.map((st, i) => `
+      <div class="flex items-center gap-2 py-2 border-b border-surface-container">
         <input data-sub-toggle="${st.id}" class="task-checkbox" type="checkbox" ${st.done ? 'checked' : ''} />
-        <span class="text-body-md text-on-surface flex-grow ${st.done ? 'line-through opacity-60' : ''}">${esc(st.title)}</span>
-        <button data-sub-del="${st.id}" class="text-secondary">${icon('close', 'text-[18px]')}</button>
+        <input data-sub-title="${st.id}" value="${esc(st.title)}"
+          class="flex-grow min-w-0 bg-transparent text-body-md text-on-surface focus:outline-none ${st.done ? 'line-through opacity-60' : ''}" />
+        <button data-sub-move="${st.id}" data-dir="-1" aria-label="Move up"
+          class="text-secondary p-1 ${i === 0 ? 'opacity-30 pointer-events-none' : ''}">${icon('move-up', 'text-[16px]')}</button>
+        <button data-sub-move="${st.id}" data-dir="1" aria-label="Move down"
+          class="text-secondary p-1 ${i === t.subtasks.length - 1 ? 'opacity-30 pointer-events-none' : ''}">${icon('move-down', 'text-[16px]')}</button>
+        <button data-sub-del="${st.id}" aria-label="Delete subtask" class="text-secondary p-1">${icon('close', 'text-[18px]')}</button>
       </div>`).join('')}
       <form data-sub-form class="flex items-center gap-3 pt-3">
-        ${icon('add', 'text-secondary')}
         <input name="title" type="text" placeholder="Add subtask" class="flex-grow bg-transparent text-body-md text-on-surface focus:outline-none" />
+        <button type="submit" aria-label="Add subtask"
+          class="text-secondary active:text-accent-soft active:scale-90 transition-all">${icon('add')}</button>
       </form>
     </div>
   </main>`;
@@ -104,6 +110,34 @@ export function mount(root, id) {
         subtasks: cur.subtasks.map((st) =>
           st.id === cb.getAttribute('data-sub-toggle') ? { ...st, done: !st.done } : st),
       });
+      rerender();
+    });
+  });
+  root.querySelectorAll('[data-sub-title]').forEach((input) => {
+    // `change` fires on blur, like the parent task title above. No rerender(): the
+    // input already shows what you typed, and re-rendering would fight the caret.
+    input.addEventListener('change', () => {
+      const subId = input.getAttribute('data-sub-title');
+      const cur = getTask(id);
+      const title = input.value.trim();
+      if (!title) {
+        input.value = cur.subtasks.find((st) => st.id === subId)?.title || '';
+        return;
+      }
+      updateTask(id, {
+        subtasks: cur.subtasks.map((st) => (st.id === subId ? { ...st, title } : st)),
+      });
+    });
+  });
+  root.querySelectorAll('[data-sub-move]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cur = getTask(id);
+      const from = cur.subtasks.findIndex((st) => st.id === btn.getAttribute('data-sub-move'));
+      const to = from + Number(btn.getAttribute('data-dir'));
+      if (from < 0 || to < 0 || to >= cur.subtasks.length) return;
+      const subtasks = [...cur.subtasks];
+      [subtasks[from], subtasks[to]] = [subtasks[to], subtasks[from]];
+      updateTask(id, { subtasks });
       rerender();
     });
   });
