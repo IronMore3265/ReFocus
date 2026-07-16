@@ -99,3 +99,10 @@ app/src/main/assets/public
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
+
+# Release signing — the keystore and its passwords never go in git.
+# (signing-lineage.bin is NOT secret: public certs + proof-of-rotation. It is
+# committed, because every future release has to be signed against it.)
+keystore.properties
+*.jks
+*.keystore

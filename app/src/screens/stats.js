@@ -36,7 +36,10 @@ export function render() {
     </div>
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
-      <h2 class="text-headline-md text-on-surface mb-stack-md">Weekly Activity</h2>
+      <div class="flex items-center gap-3 mb-stack-md">
+        ${icon('stats', 'text-accent-soft')}
+        <h2 class="text-headline-md text-on-surface">Weekly Activity</h2>
+      </div>
       <div class="flex items-end justify-between gap-2 h-40">
         ${week.map((d, i) => `
         <div class="flex flex-col items-center flex-1 h-full justify-end gap-2">
@@ -48,7 +51,7 @@ export function render() {
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex items-center gap-3 mb-stack-sm">
-        ${icon('streak', 'text-accent-soft', streak > 0)}
+        ${icon('streak', 'text-accent-soft')}
         <h2 class="text-headline-md text-on-surface">Daily Streak</h2>
       </div>
 
@@ -70,7 +73,7 @@ export function render() {
             <div class="w-full h-10 rounded-xl flex items-center justify-center transition-colors ${cell} ${
               isToday ? 'border-2 border-accent-soft' : 'border'
             }">
-              ${icon('streak', 'text-[18px]', lit)}
+              ${icon('streak', 'text-[24px]', lit)}
             </div>
             <span class="text-label-sm ${isToday ? 'text-accent-soft font-bold' : 'text-secondary'}">${d.label}</span>
           </div>`;
@@ -93,9 +96,9 @@ export function render() {
       ${ranked.length ? ranked.map(({ track, tier, value }) => `
       <span class="flex items-center gap-4 py-3 border-b border-surface-container last:border-0">
         ${medal(tier, 'w-12 h-12', track.icon, 'text-[22px]')}
-        <span class="block">
-          <span class="block text-body-md font-semibold text-on-surface">${tier.name} · ${esc(track.title)}</span>
-          <span class="block text-body-sm text-secondary">${value} ${track.unit}</span>
+        <span class="flex-grow min-w-0 flex items-baseline justify-between gap-2">
+          <span class="text-body-md font-semibold text-on-surface truncate">${tier.name} · ${esc(track.title)}</span>
+          <span class="text-body-sm text-secondary shrink-0">${value} ${track.unit}</span>
         </span>
       </span>`).join('') : `<span class="block text-body-sm text-secondary py-2">Complete focus sessions to earn your first Bronze tier.</span>`}
     </button>

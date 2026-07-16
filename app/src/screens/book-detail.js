@@ -12,19 +12,48 @@ import {
 } from '../ui.js';
 import { coverHtml } from './reading.js';
 import { coverFromFile } from '../api/books.js';
-import { lookupWord, WordNotFoundError } from '../api/dictionary.js';
+import { lookupWord, pronunciationFor, WordNotFoundError } from '../api/dictionary.js';
 
-// Says the word out loud. The API's recording is the real pronunciation, so it
-// wins — but it only exists for some words, it's a remote URL (so it needs the
-// network even for a word saved long ago), and words saved before this feature
-// have no `audio` at all. The device's own voice covers all three, which is what
-// lets the speaker button be unconditional rather than appearing at random.
-async function speak(entry) {
-  if (entry.audio) {
+// Says the word out loud.
+//
+// A real recording is the point, so it wins. Where one isn't stored — every word
+// saved before v1.3.0, and any the free dictionary had no recording for — we ask
+// Merriam-Webster for it on the spot and keep it on the entry, so the word is only
+// ever fetched once.
+//
+// The device voice is a genuine last resort, not a safety net: an Android WebView
+// ships no speech-synthesis voices, so on the phone this branch is silence. That's
+// exactly why the fetch above has to happen rather than falling straight through.
+//
+// The element is held at module scope for the same reason notify.js holds its
+// chime: a local Audio can be collected mid-playback, and a second tap should
+// replace the first rather than overlap it.
+let wordAudio = null;
+
+async function playAudio(url) {
+  if (wordAudio) {
+    wordAudio.pause();
+    wordAudio.currentTime = 0;
+  }
+  wordAudio = new Audio(url);
+  await wordAudio.play();
+}
+
+async function speak(entry, bookId = null) {
+  let url = entry.audio;
+  if (!url) {
+    url = await pronunciationFor(entry.word);
+    // Cache it against the saved word so the next tap is instant and offline.
+    if (url && bookId && entry.id) {
+      updateBookVocab(bookId, entry.id, { audio: url });
+      entry.audio = url;
+    }
+  }
+  if (url) {
     try {
-      await new Audio(entry.audio).play();
+      await playAudio(url);
       return;
-    } catch { /* offline, or a dead URL — fall through to the device voice */ }
+    } catch { /* offline, a dead URL, or no gesture — try the device voice */ }
   }
   if (!('speechSynthesis' in window)) return;
   speechSynthesis.cancel(); // a second tap should replace the first, not queue behind it
@@ -228,8 +257,12 @@ export function render(id) {
 
   const pct = book.totalPages ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
   const log = getReadingLog().filter((r) => r.bookId === id).sort((a, b) => b.at - a.at);
-  const notes = bookNotes(book).slice().reverse();
-  const vocab = bookVocab(book).slice().reverse();
+  // Both lists run by page, deepest first — they're read against the book, so where
+  // in the book a thing came from orders it better than when you happened to save
+  // it. Ties break on recency, which is the order they used to be in.
+  const byPage = (a, b) => (Number(b.page) || 0) - (Number(a.page) || 0) || (b.at || 0) - (a.at || 0);
+  const notes = bookNotes(book).slice().sort(byPage);
+  const vocab = bookVocab(book).slice().sort(byPage);
 
   return `
   ${subHeader(book.title, `
@@ -625,14 +658,14 @@ export function mount(root, id) {
       const entry = vocabEntry(btn, 'data-vocab-open');
       if (!entry) return;
       const { el } = showSheet(entryDetailHtml(entry));
-      el.querySelector('[data-speak]')?.addEventListener('click', () => speak(entry));
+      el.querySelector('[data-speak]')?.addEventListener('click', () => speak(entry, id));
     });
   });
 
   root.querySelectorAll('[data-vocab-speak]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const entry = vocabEntry(btn, 'data-vocab-speak');
-      if (entry) speak(entry);
+      if (entry) speak(entry, id);
     });
   });
 

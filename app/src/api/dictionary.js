@@ -87,6 +87,24 @@ async function lookupFree(word) {
   };
 }
 
+// Just the recording for a word, straight from Merriam-Webster.
+//
+// For the speaker button on a word that has no `audio` stored — every word saved
+// before v1.3.0, plus any the free dictionary had no recording for. Without this
+// the button falls through to the device voice, and an Android WebView ships no
+// speech-synthesis voices at all, so "fall back to the device" means silence.
+export async function pronunciationFor(rawWord) {
+  const word = String(rawWord || '').trim();
+  const { dict } = mwKeys();
+  if (!word || !dict) return '';
+  try {
+    const mw = await mwLookup(word, dict);
+    return mw?.audio || '';
+  } catch {
+    return ''; // no recording is not an error worth interrupting a tap for
+  }
+}
+
 // The full lookup: free API first, Merriam-Webster only where it's needed.
 //
 // The two MW references are metered per key, so this deliberately does not call
