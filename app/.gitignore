@@ -26,3 +26,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Signed release APKs (built by scripts/release-apk.mjs)
+dist-apk

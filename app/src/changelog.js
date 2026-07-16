@@ -13,6 +13,18 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.1',
+    date: '2026-07-17',
+    summary: 'Pronunciation works on every saved word, subtasks read properly, and a tidier Focus Stats.',
+    changes: [
+      { kind: 'fixed', text: 'The speaker now works on words you saved before this update — ReFocus fetches the recording from Merriam-Webster the first time you tap it, and keeps it.' },
+      { kind: 'fixed', text: 'Long subtasks wrap onto the next line instead of running off the side.' },
+      { kind: 'fixed', text: 'Reordering a subtask no longer reloads the page and throws you back to the top.' },
+      { kind: 'improved', text: 'Notes and Vocabulary are ordered by page, deepest first.' },
+      { kind: 'improved', text: 'Focus Stats: Weekly Activity has an icon, the Daily Streak flames are bigger, and a recent achievement fits on one line.' },
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-07-17',
     summary: 'A book page you can scan, subtasks you can fix and reorder, medals worth earning, and a status bar that follows your theme.',
