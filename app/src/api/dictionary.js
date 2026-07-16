@@ -1,10 +1,19 @@
-// Word lookup — https://dictionaryapi.dev (free, no key, no rate limit worth
-// worrying about). Same plain-fetch shape as api/books.js; the app already holds
-// the INTERNET permission.
+// Word lookup — https://dictionaryapi.dev (free, no key) as the primary source,
+// with Merriam-Webster (api/merriam.js) filling its gaps.
 //
-// The API answers with an array of entries, each carrying its own phonetics and
-// meanings. We flatten that into one record per word:
+// The free API answers with an array of entries, each carrying its own phonetics
+// and meanings. We flatten that into one record per word:
 //   { word, phonetic, audio, meanings: [{ partOfSpeech, definitions: [{definition, example}], synonyms }], synonyms }
+//
+// That shape is a contract, not an implementation detail: store.js persists it to
+// localStorage so a saved word re-reads offline. Whatever a source returns gets
+// normalised into it here, and entries saved by older versions still render.
+//
+// Why the free API stays in front: it needs no key, it returns IPA, and it costs
+// nothing per call. MW is metered (1000/key/day), so it's only consulted when the
+// free answer is actually missing something — see lookupWord.
+import { fetchJson, NetworkError } from './http.js';
+import { mwKeys, mwLookup, mwSynonyms, MwKeyError } from './merriam.js';
 
 const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
 
@@ -39,23 +48,13 @@ function pronunciation(entries) {
   };
 }
 
-export async function lookupWord(rawWord) {
-  const word = String(rawWord || '').trim();
-  if (!word) throw new Error('Type a word to look up.');
-
-  let res;
-  try {
-    res = await fetch(`${ENDPOINT}/${encodeURIComponent(word.toLowerCase())}`);
-  } catch {
-    throw new Error("Couldn't reach the dictionary — check your connection.");
-  }
-  if (res.status === 404) throw new WordNotFoundError(`No dictionary entry for “${word}”.`);
+// The free API, parsed into the shared shape. Returns null for "no entry" rather
+// than throwing — at this level a miss isn't yet a failure, because MW gets a turn.
+async function lookupFree(word) {
+  const { res, body: entries } = await fetchJson(`${ENDPOINT}/${encodeURIComponent(word.toLowerCase())}`);
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Dictionary lookup failed (HTTP ${res.status}).`);
-
-  const entries = await res.json();
-  if (!Array.isArray(entries) || !entries.length) {
-    throw new WordNotFoundError(`No dictionary entry for “${word}”.`);
-  }
+  if (!Array.isArray(entries) || !entries.length) return null;
 
   const meanings = entries
     .flatMap((e) => e.meanings || [])
@@ -69,7 +68,7 @@ export async function lookupWord(rawWord) {
     }))
     .filter((m) => m.definitions.length);
 
-  if (!meanings.length) throw new WordNotFoundError(`No dictionary entry for “${word}”.`);
+  if (!meanings.length) return null;
 
   // Synonyms hang off both the meaning and its individual senses; the union of
   // the lot, de-duplicated, is what's actually useful to see.
@@ -85,5 +84,84 @@ export async function lookupWord(rawWord) {
     ...pronunciation(entries),
     meanings,
     synonyms,
+  };
+}
+
+// The full lookup: free API first, Merriam-Webster only where it's needed.
+//
+// The two MW references are metered per key, so this deliberately does not call
+// them on every word. A common word with IPA, audio and synonyms already attached
+// makes exactly one request, to the free API, as it always did.
+export async function lookupWord(rawWord) {
+  const word = String(rawWord || '').trim();
+  if (!word) throw new Error('Type a word to look up.');
+
+  const keys = mwKeys();
+  let base = null;
+  let baseErr = null;
+  try {
+    base = await lookupFree(word);
+  } catch (err) {
+    // A free-API outage shouldn't sink the lookup if MW can still answer. Hold the
+    // error in case MW can't either.
+    baseErr = err;
+  }
+
+  // Nothing to fill in — the common case, and the cheap one.
+  if (base && base.audio && base.synonyms.length) return base;
+
+  const needDict = keys.dict && (!base || !base.audio || !base.phonetic || !base.meanings.length);
+  const needSyn = keys.thes && (!base || !base.synonyms.length);
+  if (!needDict && !needSyn) {
+    if (base) return base;
+    throw baseErr || new WordNotFoundError(`No dictionary entry for “${word}”.`);
+  }
+
+  // allSettled, not all: MW is a supplement. A rejected key or a dead thesaurus
+  // must never turn a perfectly good definition into an error.
+  const [dictRes, synRes] = await Promise.allSettled([
+    needDict ? mwLookup(word, keys.dict) : Promise.resolve(null),
+    needSyn ? mwSynonyms(word, keys.thes) : Promise.resolve([]),
+  ]);
+
+  const mw = dictRes.status === 'fulfilled' ? dictRes.value : null;
+  const mwSyns = synRes.status === 'fulfilled' ? synRes.value : [];
+  const keyRejected = [dictRes, synRes].some(
+    (r) => r.status === 'rejected' && r.reason instanceof MwKeyError,
+  );
+
+  if (!base) {
+    // The free API had nothing. MW's shortdef is a real definition, so this is a
+    // lookup that would have failed outright before.
+    if (mw?.meanings?.length) {
+      return {
+        word,
+        phonetic: mw.phonetic,
+        audio: mw.audio,
+        meanings: mw.meanings,
+        synonyms: mwSyns,
+        ...(keyRejected ? { notice: 'Merriam-Webster rejected the key — check it in Settings.' } : {}),
+      };
+    }
+    // Both missed. If MW offered spellings, they're more use than the miss itself.
+    if (mw?.suggestions?.length) {
+      throw new WordNotFoundError(`No entry for “${word}”. Did you mean: ${mw.suggestions.join(', ')}?`);
+    }
+    // A network error that stopped us reaching the free API is a failure, not a
+    // verdict on the word — say so rather than claiming it doesn't exist.
+    if (baseErr && !(baseErr instanceof NetworkError && mw)) throw baseErr;
+    throw new WordNotFoundError(`No dictionary entry for “${word}”.`);
+  }
+
+  return {
+    ...base,
+    // MW's respelling (\ˈbas\) is not IPA, so it only stands in for an empty field
+    // — never over the top of the free API's IPA.
+    phonetic: base.phonetic || mw?.phonetic || '',
+    audio: base.audio || mw?.audio || '',
+    synonyms: base.synonyms.length ? base.synonyms : mwSyns,
+    // Transient — addBookVocab destructures the fields it stores, so this is shown
+    // once and never persisted.
+    ...(keyRejected ? { notice: 'Merriam-Webster rejected the key — check it in Settings.' } : {}),
   };
 }

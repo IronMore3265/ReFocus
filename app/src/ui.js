@@ -51,9 +51,9 @@ export function appHeader() {
         <span class="text-headline-md font-bold text-accent-soft transition-colors truncate">${formatDate()}</span>
         ${streak ? `
         <button data-nav="#/stats" aria-label="${streak} day streak"
-          class="shrink-0 flex items-center gap-0.5 pl-1.5 pr-2 py-0.5 rounded-full bg-accent-tint text-accent-soft active:scale-95 transition-transform">
-          ${icon('streak', 'text-[16px]', true)}
-          <span class="text-label-sm font-bold">${streak}</span>
+          class="shrink-0 flex items-center gap-1 pl-2 pr-2.5 py-1 rounded-full bg-accent-tint text-accent-soft active:scale-95 transition-transform">
+          ${icon('streak', 'text-[22px]', true)}
+          <span class="text-body-sm font-bold">${streak}</span>
         </button>` : ''}
       </div>
       <button data-nav="#/profile" class="p-1 rounded-full text-accent-soft active:opacity-70 transition-opacity shrink-0">
@@ -170,16 +170,20 @@ export function clampedText(text, { clampCls = 'line-clamp-5', cls = '' } = {}) 
   </div>`;
 }
 
+// Safe to call more than once on the same scope, which matters because a
+// display:none element measures 0x0 — text inside a hidden tab looks unclamped and
+// loses its toggle. Callers that reveal content re-run this; the measurement is
+// re-decided every time and the listener is bound at most once.
 export function bindClampToggles(scope) {
   scope.querySelectorAll('[data-clamp]').forEach((wrap) => {
     const textEl = wrap.querySelector('[data-clamp-text]');
     const btn = wrap.querySelector('[data-clamp-toggle]');
     if (!textEl || !btn) return;
     // An unclamped scrollHeight no taller than the box means nothing is being cut.
-    if (textEl.scrollHeight <= textEl.clientHeight + 2) {
-      btn.classList.add('hidden');
-      return;
-    }
+    const clipped = textEl.scrollHeight > textEl.clientHeight + 2;
+    btn.classList.toggle('hidden', !clipped);
+    if (!clipped || wrap.hasAttribute('data-clamp-bound')) return;
+    wrap.setAttribute('data-clamp-bound', '');
     const clampCls = wrap.getAttribute('data-clamp');
     btn.addEventListener('click', () => {
       const clamped = textEl.classList.toggle(clampCls);

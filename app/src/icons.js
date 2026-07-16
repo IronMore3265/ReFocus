@@ -10,12 +10,12 @@
 // exactly the way they drove the icon font this replaced.
 import {
   ArrowLeft, ArrowRight, BookCopy, BookOpen, BookmarkCheck, BookmarkPlus,
-  Calendar, CalendarClock, Camera, ChartLine, Check, ChevronLeft, ChevronRight,
-  ChevronsUp, CircleAlert, CircleCheckBig, CircleUserRound, ClipboardClock, Clock,
-  CloudDownload, Download, Ellipsis, Flame, House, Library, ListChecks, Lock, Medal,
-  Menu, Minus, Moon, Palette, Pause, Pencil, Play, Plus, RotateCcw, RotateCw, Search,
-  Settings, SkipForward, Sparkles, Sun, SunMoon, Timer, Trash2, TrendingUp, Trophy,
-  Upload, UserRoundPen, Volume2, Wrench, X,
+  Calendar, CalendarClock, Camera, ChartLine, Check, ChevronDown, ChevronLeft,
+  ChevronRight, ChevronUp, ChevronsDown, ChevronsUp, CircleAlert, CircleCheckBig,
+  CircleUserRound, ClipboardClock, Clock, CloudDownload, Download, Ellipsis, Flame,
+  House, Library, ListChecks, Lock, Medal, Menu, Minus, Moon, Palette, Pause, Pencil,
+  Play, Plus, RotateCcw, RotateCw, Search, Settings, SkipForward, Sparkles, Sun,
+  SunMoon, Timer, Trash2, TrendingUp, Trophy, Upload, UserRoundPen, Volume2, Wrench, X,
 } from 'lucide';
 
 // Keyed by the app's own vocabulary, not Material's or Lucide's — `flame`, not
@@ -36,6 +36,8 @@ export const ICONS = {
   // actions
   add: Plus,
   remove: Minus,
+  'move-up': ChevronUp,      // reorder a list item — single chevron, so it never
+  'move-down': ChevronDown,  // reads as the double-chevron priority mark
   edit: Pencil,
   delete: Trash2,
   check: Check,
@@ -66,6 +68,7 @@ export const ICONS = {
   tasks: ListChecks,
   'task-done': CircleCheckBig,
   'priority-high': ChevronsUp,
+  'priority-low': ChevronsDown,
   calendar: Calendar,
   due: CalendarClock,
 

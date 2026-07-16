@@ -115,6 +115,25 @@ export function setApifyToken(token) {
   else save('apifyToken', token);
 }
 
+// Merriam-Webster keys — pronunciation audio and synonyms for the words the free
+// dictionary comes up short on. Two references, two keys; they aren't
+// interchangeable. Only an *override* is stored: empty means "use the built-in
+// key", which is what almost everyone will do until its daily quota runs out.
+export function getMwDictKey() {
+  return load('mwDictKey', '');
+}
+export function setMwDictKey(key) {
+  if (!key) localStorage.removeItem(PREFIX + 'mwDictKey');
+  else save('mwDictKey', key);
+}
+export function getMwThesKey() {
+  return load('mwThesKey', '');
+}
+export function setMwThesKey(key) {
+  if (!key) localStorage.removeItem(PREFIX + 'mwThesKey');
+  else save('mwThesKey', key);
+}
+
 // ---------- books ----------
 // book: { id, title, author, totalPages, currentPage, cover (data URI/URL | null),
 //         synopsis, notes: [{id, text, page, at, updatedAt?}],

@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     // no notification, no controls and no end-of-phase alarm.
     registerPlugin(TimerServicePlugin.class);
     registerPlugin(UpdaterPlugin.class);
+    registerPlugin(SystemBarsPlugin.class);
 
     super.onCreate(savedInstanceState); // BridgeActivity builds the bridge + WebView here
 

@@ -5,17 +5,29 @@ import {
   primaryBtn, rerender, openDateTimeSheet, priorityPills, bindPriorityPills,
 } from '../ui.js';
 
+// Medium is the default, so it gets no mark — one on every row would be noise.
+function priorityMark(t) {
+  if (t.done || t.priority === 'medium') return '';
+  if (t.priority === 'high') return icon('priority-high', 'text-[14px] prio-high prio-mark');
+  if (t.priority === 'low') return icon('priority-low', 'text-[14px] prio-low prio-mark');
+  return '';
+}
+
 function taskRow(t) {
   const due = dueLabel(t);
+  // data-nav sits on the row, not the title: the padding and the chevron were dead
+  // zones before. The checkbox stays its own hit target — the delegation guard in
+  // main.js is what stops it navigating the row underneath it.
   return `
-  <div class="flex items-start gap-4 py-4 border-b border-surface-container">
+  <div data-nav="#/task/${t.id}" role="button"
+    class="flex items-start gap-4 py-4 -mx-2 px-2 rounded-lg border-b border-surface-container active:bg-surface-bright transition-colors">
     <input data-toggle="${t.id}" class="task-checkbox mt-0.5" type="checkbox" ${t.done ? 'checked' : ''} />
-    <button data-nav="#/task/${t.id}" class="flex flex-col flex-grow text-left min-w-0 ${t.done ? 'opacity-60' : ''}">
+    <div class="flex flex-col flex-grow text-left min-w-0 ${t.done ? 'opacity-60' : ''}">
       <span class="text-body-md text-on-surface leading-tight ${t.done ? 'line-through' : ''}">${esc(t.title)}</span>
       <span class="text-label-sm ${due.cls} mt-1 flex items-center gap-1">
-        ${t.priority === 'high' && !t.done ? icon('priority-high', 'text-[14px] text-accent-soft') : ''}${due.text}
+        ${priorityMark(t)}${due.text}
       </span>
-    </button>
+    </div>
     ${icon('chevron-right', 'text-secondary-fixed-dim mt-1')}
   </div>`;
 }
