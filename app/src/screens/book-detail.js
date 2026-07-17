@@ -13,6 +13,7 @@ import {
 import { coverHtml } from './reading.js';
 import { coverFromFile } from '../api/books.js';
 import { lookupWord, pronunciationFor, WordNotFoundError } from '../api/dictionary.js';
+import { nativeLens, openLens } from '../native/lens.js';
 
 // Says the word out loud.
 //
@@ -222,7 +223,7 @@ function historyHtml(log) {
   const rows = log.map((r, i) => `
     <div class="flex justify-between items-center py-3 border-b border-surface-container ${i >= LOG_PREVIEW ? 'hidden' : ''}" ${i >= LOG_PREVIEW ? 'data-log-extra' : ''}>
       <span class="text-body-md text-on-surface">${pagesIn(r)} pages</span>
-      <span class="text-body-sm text-secondary">p. ${r.from} → ${r.to} · ${formatDate(r.at)}</span>
+      <span class="text-body-sm text-secondary flex items-center gap-1">p. ${r.from}${icon('forward', 'text-[11px] shrink-0')}${r.to} · ${formatDate(r.at)}</span>
     </div>`).join('');
 
   return `
@@ -426,13 +427,92 @@ function openVocabPageSheet(bookId, entry) {
   });
 }
 
+// Insert rather than append: when a note is being edited the caret is wherever
+// the user left it, and `value +=` would drop the scanned text at the end no
+// matter where they were pointing.
+function insertAtCaret(textarea, text) {
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? start;
+  textarea.setRangeText(text, start, end, 'end');
+  textarea.focus();
+}
+
+// The "Scan" pill and the trip back from Google Lens.
+//
+// Lens is one-way — Android has no "start Lens for result" — so the user copies
+// the text over there, and coming back we *offer* to paste it. Offering rather
+// than inserting on sight matters: the clipboard is just as likely to hold a URL
+// they copied an hour ago as the quote they just scanned.
+//
+// The clipboard is only ever read from the tap on "Paste scanned text", never on
+// the way back. Reading it on resume would fire Android 12+'s "ReFocus pasted
+// from your clipboard" toast every single time, wanted or not.
+function bindScan(el) {
+  const pasteWrap = el.querySelector('[data-scan-paste]');
+  const errorEl = el.querySelector('[data-scan-error]');
+  const textarea = el.querySelector('textarea');
+  let handle = null;
+
+  const fail = (msg) => {
+    errorEl.textContent = msg;
+    errorEl.classList.remove('hidden');
+  };
+  const clearError = () => errorEl.classList.add('hidden');
+
+  el.querySelector('[data-action="scan"]').addEventListener('click', async () => {
+    clearError();
+    let opened = false;
+    try {
+      opened = await openLens();
+    } catch { /* the bridge is gone; same dead end as Lens not being installed */ }
+    if (!opened) {
+      fail("Google Lens isn't available on this device.");
+      return;
+    }
+    // At most one listener, and it takes itself off on the first foreground
+    // event either way — a sheet dismissed while we were in Lens would otherwise
+    // leave a listener behind holding a detached textarea, one per note opened.
+    await handle?.remove();
+    const { App } = await import('@capacitor/app');
+    handle = await App.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) return;
+      handle?.remove();
+      handle = null;
+      if (textarea.isConnected) pasteWrap.classList.remove('hidden');
+    });
+  });
+
+  el.querySelector('[data-action="paste-scan"]').addEventListener('click', async () => {
+    clearError();
+    let text = '';
+    try {
+      const { Clipboard } = await import('@capacitor/clipboard');
+      const read = await Clipboard.read();
+      if (read?.type?.startsWith('text')) text = String(read.value || '').trim();
+    } catch { /* nothing readable there — handled as an empty clipboard below */ }
+    if (!text) {
+      fail('Nothing to paste — copy the text in Google Lens first.');
+      return;
+    }
+    insertAtCaret(textarea, text);
+    pasteWrap.classList.add('hidden');
+  });
+}
+
 // One sheet for both adding and editing — `note` absent means add.
 function openNoteSheet(book, note = null) {
   const editing = !!note;
   const { el, close } = showSheet(`
     <div class="flex justify-between items-center gap-2 mb-4">
       <h2 class="text-headline-md text-on-surface">${editing ? 'Edit Note' : 'Add Note'}</h2>
-      ${pillBtn('Look up', 'dictionary', 'data-action="lookup"')}
+      <span class="flex items-center gap-1.5 shrink-0">
+        ${nativeLens ? pillBtn('Scan', 'camera', 'data-action="scan"') : ''}
+        ${pillBtn('Look up', 'dictionary', 'data-action="lookup"')}
+      </span>
+    </div>
+    <p data-scan-error class="hidden text-label-sm text-error mb-3"></p>
+    <div data-scan-paste class="hidden mb-3">
+      ${textBtn('Paste scanned text', 'data-action="paste-scan"')}
     </div>
     <form data-form>
       ${field('Note or quote', `<textarea name="text" rows="6" required
@@ -444,6 +524,7 @@ function openNoteSheet(book, note = null) {
     </form>`);
 
   el.querySelector('[data-action="lookup"]').addEventListener('click', () => openDictionarySheet(book.id));
+  if (nativeLens) bindScan(el);
 
   el.querySelector('[data-form]').addEventListener('submit', (e) => {
     e.preventDefault();

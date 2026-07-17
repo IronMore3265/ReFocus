@@ -16,6 +16,7 @@ public class MainActivity extends BridgeActivity {
     registerPlugin(TimerServicePlugin.class);
     registerPlugin(UpdaterPlugin.class);
     registerPlugin(SystemBarsPlugin.class);
+    registerPlugin(LensPlugin.class);
 
     super.onCreate(savedInstanceState); // BridgeActivity builds the bridge + WebView here
 

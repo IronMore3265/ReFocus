@@ -41,6 +41,14 @@
         </provider>
     </application>
 
+    <!-- Package visibility (API 30+). Without these, LensPlugin's resolveActivity()
+         and getLaunchIntentForPackage() come back null even on a phone that has
+         Lens, and "Scan" would always report it as unavailable. -->
+    <queries>
+        <package android:name="com.google.android.googlequicksearchbox" />
+        <package android:name="com.google.ar.lens" />
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />

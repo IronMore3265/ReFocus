@@ -13,6 +13,15 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.3',
+    date: '2026-07-17',
+    summary: 'Scan a page with Google Lens instead of typing the quote out.',
+    changes: [
+      { kind: 'new', text: 'Notes have a Scan button that opens Google Lens — copy the text off the page, come back, and tap Paste scanned text.' },
+      { kind: 'fixed', text: 'The arrow between page numbers in Reading History sits level with them again.' },
+    ],
+  },
+  {
     version: '1.3.2',
     date: '2026-07-17',
     summary: 'Ticking things off no longer reloads the page out from under you.',
