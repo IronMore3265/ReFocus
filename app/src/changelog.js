@@ -13,6 +13,14 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.4',
+    date: '2026-07-17',
+    summary: 'Scan actually opens Google Lens now.',
+    changes: [
+      { kind: 'fixed', text: 'Scan opens Google Lens instead of saying it isn\'t available on your device.' },
+    ],
+  },
+  {
     version: '1.3.3',
     date: '2026-07-17',
     summary: 'Scan a page with Google Lens instead of typing the quote out.',

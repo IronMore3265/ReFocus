@@ -1,5 +1,6 @@
 package com.nfraiyan.refocus;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -18,10 +19,19 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * hands the recognised text back to us. The user copies it inside Lens and comes
  * back — src/screens/book-detail.js offers to paste it into the note.
  *
- * There is no official intent for Lens either, hence two routes: the deep link
- * into the Google app (undocumented, so it may stop working one day), then the
- * standalone Lens app. Both need the <queries> block in AndroidManifest.xml —
- * without it package visibility hides them and both resolve to null.
+ * Google publishes no intent for Lens, so every route below is undocumented and
+ * version-dependent — the Google app can rename or unexport any of them in an
+ * update. Hence a cascade rather than a single route: try each in turn and take
+ * the first that resolves. They are ordered cheapest-to-most-specific, deep links
+ * first, because a deep link survives an activity rename and an explicit
+ * ComponentName does not.
+ *
+ * The legacy standalone Lens app is last and rarely present — Google pulled it
+ * from the Play Store in October 2022 and folded Lens into the Google app — but
+ * it costs one null check on phones old enough to still carry it.
+ *
+ * All routes need the <queries> block in AndroidManifest.xml — without it package
+ * visibility hides both packages and every route resolves to null.
  *
  * Registered by hand in MainActivity — a plugin class inside the app is not in
  * capacitor.plugins.json and the bridge will never find it on its own.
@@ -37,21 +47,36 @@ public class LensPlugin extends Plugin {
     Context ctx = getContext();
     PackageManager pm = ctx.getPackageManager();
 
-    Intent deepLink = new Intent(Intent.ACTION_VIEW, Uri.parse("googleapp://lens"))
-        .setPackage(GOOGLE_APP)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-    Intent standalone = pm.getLaunchIntentForPackage(LENS_APP);
-    if (standalone != null) standalone.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-    // Lens not being installed is an ordinary outcome, not a failure — resolve
+    // Lens not being reachable is an ordinary outcome, not a failure — resolve
     // false and let the sheet say so, rather than rejecting into a catch that
     // can't tell "no Lens" apart from "the bridge broke".
-    boolean opened = start(ctx, pm, deepLink) || start(ctx, pm, standalone);
+    boolean opened =
+        start(ctx, pm, deepLink("google://lens"))
+            || start(ctx, pm, deepLink("googleapp://lens"))
+            || start(ctx, pm, component(GOOGLE_APP, "com.google.android.apps.lens.MainActivity"))
+            || start(ctx, pm, component(GOOGLE_APP, "com.google.android.apps.search.lens.LensActivity"))
+            || start(ctx, pm, launchOf(pm, LENS_APP));
 
     JSObject result = new JSObject();
     result.put("opened", opened);
     call.resolve(result);
+  }
+
+  private Intent deepLink(String uri) {
+    return new Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+        .setPackage(GOOGLE_APP)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+  }
+
+  private Intent component(String pkg, String cls) {
+    return new Intent(Intent.ACTION_MAIN)
+        .setComponent(new ComponentName(pkg, cls))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+  }
+
+  private Intent launchOf(PackageManager pm, String pkg) {
+    Intent intent = pm.getLaunchIntentForPackage(pkg);
+    return intent == null ? null : intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
   }
 
   private boolean start(Context ctx, PackageManager pm, Intent intent) {
@@ -60,8 +85,9 @@ public class LensPlugin extends Plugin {
       ctx.startActivity(intent);
       return true;
     } catch (Exception e) {
-      // resolveActivity said yes a moment ago; losing the race (app disabled or
-      // uninstalled mid-call) should fall through to the next route, not crash.
+      // resolveActivity only proves the activity exists, not that we may start it:
+      // a non-exported component throws SecurityException here. That, and losing a
+      // race with an uninstall, should fall through to the next route, not crash.
       return false;
     }
   }
