@@ -439,10 +439,12 @@ function insertAtCaret(textarea, text) {
 
 // The "Scan" pill and the trip back from Google Lens.
 //
-// Lens is one-way — Android has no "start Lens for result" — so the user copies
-// the text over there, and coming back we *offer* to paste it. Offering rather
-// than inserting on sight matters: the clipboard is just as likely to hold a URL
-// they copied an hour ago as the quote they just scanned.
+// The pill opens the Google app, not Lens — Google won't let us open Lens itself
+// (see native/lens.js), and Lens is one tap from there. Lens tells us nothing
+// about what it recognised either, so the user copies the text over there, and
+// coming back we *offer* to paste it. Offering rather than inserting on sight
+// matters: the clipboard is just as likely to hold a URL they copied an hour ago
+// as the quote they just scanned.
 //
 // The clipboard is only ever read from the tap on "Paste scanned text", never on
 // the way back. Reading it on resume would fire Android 12+'s "ReFocus pasted
@@ -464,13 +466,13 @@ function bindScan(el) {
     let opened = false;
     try {
       opened = await openLens();
-    } catch { /* the bridge is gone; same dead end as Lens not being installed */ }
+    } catch { /* the bridge is gone; same dead end as the app not being installed */ }
     if (!opened) {
-      fail("Google Lens isn't available on this device.");
+      fail("The Google app isn't available on this device.");
       return;
     }
     // At most one listener, and it takes itself off on the first foreground
-    // event either way — a sheet dismissed while we were in Lens would otherwise
+    // event either way — a sheet dismissed while we were away would otherwise
     // leave a listener behind holding a detached textarea, one per note opened.
     await handle?.remove();
     const { App } = await import('@capacitor/app');

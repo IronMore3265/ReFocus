@@ -13,6 +13,14 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.5',
+    date: '2026-07-17',
+    summary: 'Scan works now — it opens the Google app, with Lens one tap away.',
+    changes: [
+      { kind: 'fixed', text: 'Scan opens the Google app, where Lens is the camera icon in the search bar. It did nothing at all in 1.3.3 and 1.3.4 — Google only lets its own apps open Lens directly, so the button now takes you as close as it can.' },
+    ],
+  },
+  {
     version: '1.3.4',
     date: '2026-07-17',
     summary: 'Scan actually opens Google Lens now.',
