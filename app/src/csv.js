@@ -1,6 +1,7 @@
 // CSV backup — one sectioned file: a version line, then one section per
 // collection (`[books]`, `[tasks]`, …), each with its own header row.
 // Cells are RFC-4180 escaped; nested fields (notes, subtasks) are JSON strings.
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import {
   getBooks, getTasks, getSessions, getReadingLog, getPresets, getSettings, getProfile,
 } from './store.js';
@@ -140,24 +141,55 @@ export function importCsv(text) {
   return data;
 }
 
-// Hands the CSV to the user: native share sheet in the APK, plain download on web.
-export async function deliverCsv(filename, text) {
-  try {
-    const { Capacitor } = await import('@capacitor/core');
-    if (Capacitor.isNativePlatform()) {
-      const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
-      const { Share } = await import('@capacitor/share');
-      const res = await Filesystem.writeFile({
-        path: filename, data: text, directory: Directory.Cache, encoding: Encoding.UTF8,
-      });
-      await Share.share({ title: filename, url: res.uri }).catch(() => { /* user closed the share sheet */ });
-      return;
-    }
-  } catch { /* plugins unavailable — fall through to the web download */ }
+// A backup has two useful destinations and they need different Android intents,
+// so they're two functions and the user picks between them.
+//
+// Sharing alone wasn't enough: ACTION_SEND lists only apps willing to *receive* a
+// text/csv attachment — mail, chat, Drive — so until v1.3.6 there was no way to
+// simply put the file on the phone, which is the plainest thing a backup can do.
+// Saving alone isn't enough either: the picker can't mail anyone. Hence both.
+//
+// Off-device neither intent exists and the browser's download is the only door,
+// which is why `nativeExport` gates the choice rather than the delivery.
+export const nativeExport = Capacitor.isNativePlatform();
+
+function downloadCsv(filename, text) {
   const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// Saves the CSV where the user points, via the system "Save to" picker — Downloads,
+// the SD card, Drive, anywhere with a documents provider. See SaveFilePlugin.java.
+// Throws if the file couldn't be written; → false if the user backed out.
+export async function saveCsv(filename, text) {
+  if (!nativeExport) {
+    downloadCsv(filename, text);
+    return true;
+  }
+  const SaveFile = registerPlugin('SaveFile');
+  const { saved } = await SaveFile.save({ filename, data: text, mimeType: 'text/csv' });
+  return !!saved;
+}
+
+// Hands the CSV to another app — mail, chat, Drive — through the share sheet.
+//
+// The file has to exist somewhere before it can be shared, and Cache is the right
+// somewhere: the share target reads it through the FileProvider URI straight away,
+// and Android is free to sweep it up afterwards. A backup the user wanted to keep
+// went through saveCsv instead.
+export async function shareCsv(filename, text) {
+  if (!nativeExport) {
+    downloadCsv(filename, text);
+    return;
+  }
+  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+  const { Share } = await import('@capacitor/share');
+  const res = await Filesystem.writeFile({
+    path: filename, data: text, directory: Directory.Cache, encoding: Encoding.UTF8,
+  });
+  await Share.share({ title: filename, url: res.uri }).catch(() => { /* user closed the share sheet */ });
 }

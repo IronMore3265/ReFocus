@@ -4,7 +4,7 @@ import {
   getApifyToken, setApifyToken,
   getMwDictKey, setMwDictKey, getMwThesKey, setMwThesKey,
 } from '../store.js';
-import { exportCsv, importCsv, deliverCsv } from '../csv.js';
+import { exportCsv, importCsv, saveCsv, shareCsv, nativeExport } from '../csv.js';
 import { refreshIdleTimer } from '../engine.js';
 import { playChime } from '../notify.js';
 import { nativeTimer, stopNativeTimer } from '../native/timer-service.js';
@@ -15,6 +15,38 @@ import {
 } from '../ui.js';
 import { checkForUpdate, releasesUrl } from '../api/updates.js';
 import { nativeUpdater, downloadUpdate, installUpdate } from '../native/updater.js';
+
+// Asks where the backup should go, because the two answers are different Android
+// intents and only the user knows which they meant: a file saved somewhere they
+// choose, or the share sheet to hand it to another app. See csv.js.
+//
+// Backing out of either destination is silent — they changed their mind. A failure
+// after that is not, and has to be said out loud: the picker closes on what looks
+// like a successful save, so a backup that didn't get written would otherwise pass
+// for one that did, and the user would only find out when they needed it.
+function openExportSheet(filename) {
+  const { el, close } = showSheet(`
+    <h2 class="text-headline-md text-on-surface mb-2">Export backup</h2>
+    <p class="text-body-md text-secondary mb-6">Save the CSV to your device, or send it to another app.</p>
+    ${primaryBtn('Save to files', 'data-action="export-save"')}
+    <button data-action="export-share" class="w-full py-3 mt-2 rounded-full border border-on-surface text-on-surface text-label-md">Share to another app</button>
+    <button data-close class="w-full py-3 mt-2 text-label-md text-secondary">Cancel</button>`);
+
+  const run = async (deliver) => {
+    close();
+    try {
+      await deliver(filename, exportCsv());
+    } catch (err) {
+      showSheet(`
+        <h2 class="text-headline-md text-on-surface mb-2">Export failed</h2>
+        <p class="text-body-md text-secondary mb-6">${esc(err.message)}</p>
+        <button data-close class="w-full py-3 rounded-full border border-on-surface text-on-surface text-label-md">Close</button>`);
+    }
+  };
+
+  el.querySelector('[data-action="export-save"]').addEventListener('click', () => run(saveCsv));
+  el.querySelector('[data-action="export-share"]').addEventListener('click', () => run(shareCsv));
+}
 
 // Offers the new version, then downloads and installs it on request. On the web
 // build there's no installer to hand the APK to, so it just opens the release.
@@ -269,7 +301,13 @@ export function mount(root) {
 
   // --- data management ---
   root.querySelector('[data-action="export"]').addEventListener('click', () => {
-    deliverCsv(`refocus-backup-${todayKey()}.csv`, exportCsv());
+    const filename = `refocus-backup-${todayKey()}.csv`;
+    // The browser has one door and no choice to offer, so don't stage one.
+    if (!nativeExport) {
+      saveCsv(filename, exportCsv());
+      return;
+    }
+    openExportSheet(filename);
   });
 
   const importInput = root.querySelector('[data-import-file]');

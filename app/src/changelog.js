@@ -13,6 +13,15 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.6',
+    date: '2026-07-17',
+    summary: 'Export can save your backup straight to your phone.',
+    changes: [
+      { kind: 'new', text: 'Export now asks where the backup should go: Save to files puts it in Downloads, on the SD card, or wherever you point it. Sharing it to another app still works as before.' },
+      { kind: 'improved', text: 'Export tells you when a backup couldn\'t be written instead of failing quietly.' },
+    ],
+  },
+  {
     version: '1.3.5',
     date: '2026-07-17',
     summary: 'Scan works now — it opens the Google app, with Lens one tap away.',
