@@ -13,6 +13,20 @@
 // kind: 'new' | 'improved' | 'fixed'
 export const CHANGELOG = [
   {
+    version: '1.3.2',
+    date: '2026-07-17',
+    summary: 'Ticking things off no longer reloads the page out from under you.',
+    changes: [
+      { kind: 'fixed', text: 'Ticking a subtask no longer reloads the task and throws you back to the top of it.' },
+      { kind: 'fixed', text: 'Adding, renaming, deleting or reordering a subtask leaves the rest of the page where it was.' },
+      { kind: 'fixed', text: 'On Home, starting, pausing and skipping the timer no longer reload the page.' },
+      { kind: 'fixed', text: 'Ticking off your next task on Home swaps in the one after it, without a reload.' },
+      { kind: 'fixed', text: 'Ticking a task off on the Tasks tab keeps your place in the list.' },
+      { kind: 'improved', text: 'Weekly Activity is marked with a bar chart, matching the bars underneath it.' },
+      { kind: 'improved', text: 'The achievements card is titled Achievements, and its heading now fits on one line.' },
+    ],
+  },
+  {
     version: '1.3.1',
     date: '2026-07-17',
     summary: 'Pronunciation works on every saved word, subtasks read properly, and a tidier Focus Stats.',

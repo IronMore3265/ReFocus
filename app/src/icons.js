@@ -10,7 +10,7 @@
 // exactly the way they drove the icon font this replaced.
 import {
   ArrowLeft, ArrowRight, BookCopy, BookOpen, BookmarkCheck, BookmarkPlus,
-  Calendar, CalendarClock, Camera, ChartLine, Check, ChevronDown, ChevronLeft,
+  Calendar, CalendarClock, Camera, ChartColumn, ChartLine, Check, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, ChevronsDown, ChevronsUp, CircleAlert, CircleCheckBig,
   CircleUserRound, ClipboardClock, Clock, CloudDownload, Download, Ellipsis, Flame,
   House, Library, ListChecks, Lock, Medal, Menu, Minus, Moon, Palette, Pause, Pencil,
@@ -73,7 +73,8 @@ export const ICONS = {
   due: CalendarClock,
 
   // stats + achievements
-  stats: ChartLine,
+  stats: ChartLine,        // the Focus Stats section itself
+  'chart-column': ChartColumn,  // a bar chart — the shape the weekly bars draw
   streak: Flame,
   trophy: Trophy,   // the Achievements section itself (drawer, stats link, unlock overlay)
   tier: Trophy,     // a rung on the Bronze→Diamond ladder

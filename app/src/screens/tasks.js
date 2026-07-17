@@ -2,7 +2,7 @@
 import { getTasks, addTask, toggleTask, dueLabel, dayKey, todayKey } from '../store.js';
 import {
   appHeader, bottomNav, fab, icon, esc, emptyState, showSheet, field, inputCls,
-  primaryBtn, rerender, openDateTimeSheet, priorityPills, bindPriorityPills,
+  primaryBtn, openDateTimeSheet, priorityPills, bindPriorityPills,
 } from '../ui.js';
 
 // Medium is the default, so it gets no mark — one on every row would be noise.
@@ -44,7 +44,10 @@ function section(title, iconName, tasks) {
   </section>`;
 }
 
-export function render() {
+// Ticking a task off re-sorts it into another section, so the list really does
+// have to be rebuilt — but only the list. Re-rendering the page for it sent you
+// back to the top of a list you were part-way down.
+function taskList() {
   const all = getTasks().sort((a, b) => {
     if (a.done !== b.done) return a.done - b.done;
     if (a.due && b.due) return new Date(a.due) - new Date(b.due);
@@ -60,6 +63,12 @@ export function render() {
   const todayTasks = all.filter((t) => (!t.done && isToday(t)) || doneToday(t));
   const upcoming = all.filter((t) => !t.done && !isToday(t));
 
+  return todayTasks.length || upcoming.length
+    ? `${section('Today', 'due', todayTasks)}${section('Upcoming', 'calendar', upcoming)}`
+    : emptyState('tasks', 'All clear', 'Tap + to capture your first task.');
+}
+
+export function render() {
   return `
   ${appHeader()}
   <main class="pt-page pb-page px-margin-mobile max-w-2xl mx-auto stagger">
@@ -67,10 +76,7 @@ export function render() {
       <h1 class="text-headline-lg-mobile text-on-surface mb-unit">Tasks</h1>
       <p class="text-body-md text-secondary">Organize your focus for the day.</p>
     </div>
-    ${todayTasks.length || upcoming.length ? `
-      ${section('Today', 'due', todayTasks)}
-      ${section('Upcoming', 'calendar', upcoming)}
-    ` : emptyState('tasks', 'All clear', 'Tap + to capture your first task.')}
+    <div data-task-list class="stagger">${taskList()}</div>
   </main>
   ${fab('add-task')}
   ${bottomNav('#/tasks')}`;
@@ -124,11 +130,15 @@ export function openAddTask(onDone) {
 }
 
 export function mount(root) {
-  root.querySelector('[data-action="add-task"]').addEventListener('click', () => openAddTask(rerender));
-  root.querySelectorAll('[data-toggle]').forEach((cb) => {
-    cb.addEventListener('change', () => {
-      toggleTask(cb.getAttribute('data-toggle'));
-      setTimeout(rerender, 150); // let the checkbox animation land first
-    });
+  const list = root.querySelector('[data-task-list]');
+  const redraw = () => { list.innerHTML = taskList(); };
+
+  root.querySelector('[data-action="add-task"]').addEventListener('click', () => openAddTask(redraw));
+  // Delegated, so the rows redraw() replaces stay live.
+  list.addEventListener('change', (e) => {
+    const cb = e.target.closest('[data-toggle]');
+    if (!cb) return;
+    toggleTask(cb.getAttribute('data-toggle'));
+    setTimeout(redraw, 150); // let the checkbox animation land first
   });
 }

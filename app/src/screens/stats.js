@@ -37,7 +37,7 @@ export function render() {
 
     <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md">
       <div class="flex items-center gap-3 mb-stack-md">
-        ${icon('stats', 'text-accent-soft')}
+        ${icon('chart-column', 'text-accent-soft')}
         <h2 class="text-headline-md text-on-surface">Weekly Activity</h2>
       </div>
       <div class="flex items-end justify-between gap-2 h-40">
@@ -86,12 +86,16 @@ export function render() {
     </div>
 
     <button data-nav="#/achievements" class="w-full text-left bg-surface-container-lowest border border-surface-container-high rounded-xl p-stack-md active:bg-surface-container-low transition-colors">
-      <span class="flex items-center justify-between mb-stack-sm">
-        <span class="flex items-center gap-3">
-          ${icon('trophy', 'text-accent-soft')}
-          <span class="text-headline-md text-on-surface">Recent Achievements</span>
+      <!-- "Achievements", not "Recent Achievements": at the text-headline-md the
+           sibling cards use, the longer wording needs 250px and a phone card only
+           offers ~204px beside the chevron, so it wrapped to two lines. This is
+           also what the drawer and the page it opens already call it. -->
+      <span class="flex items-center justify-between gap-2 mb-stack-sm">
+        <span class="flex items-center gap-3 min-w-0">
+          ${icon('trophy', 'text-accent-soft shrink-0')}
+          <span class="text-headline-md text-on-surface whitespace-nowrap">Achievements</span>
         </span>
-        ${icon('chevron-right', 'text-secondary')}
+        ${icon('chevron-right', 'text-secondary shrink-0')}
       </span>
       ${ranked.length ? ranked.map(({ track, tier, value }) => `
       <span class="flex items-center gap-4 py-3 border-b border-surface-container last:border-0">

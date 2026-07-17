@@ -1,7 +1,7 @@
 // Home tab — ported from stitch home_overview/code.html
 import { getProfile, currentlyReading, nextTask, dueLabel, toggleTask } from '../store.js';
 import { getTimer, remainingMs, phaseProgress, startTimer, pauseTimer, skipPhase, onTimerChange, fmtClock } from '../engine.js';
-import { appHeader, bottomNav, icon, esc, progressRing, setRingProgress, rerender } from '../ui.js';
+import { appHeader, bottomNav, icon, esc, progressRing, setRingProgress } from '../ui.js';
 import { coverHtml } from './reading.js';
 
 function greeting() {
@@ -9,6 +9,24 @@ function greeting() {
   const name = getProfile().name;
   const word = h < 5 ? 'Good Night' : h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
   return name ? `${word}, ${name}` : word;
+}
+
+// The Next Task card's body. Ticking the task off swaps in whatever is next, so
+// this is drawn on its own and re-drawn into its box rather than with the page.
+function nextTaskBody(task) {
+  if (!task) return `<p class="text-body-md text-secondary">Nothing due — enjoy the calm or add a task.</p>`;
+  const due = dueLabel(task);
+  return `
+  <div class="flex items-start gap-3">
+    <input data-task-toggle="${task.id}" class="task-checkbox mt-1" type="checkbox" />
+    <button data-nav="#/task/${task.id}" class="flex flex-col text-left">
+      <p class="text-body-md text-on-surface leading-snug">${esc(task.title)}</p>
+      <div class="flex items-center gap-1 mt-2 ${due.cls === 'text-error' ? 'text-error' : 'text-accent-soft'}">
+        ${icon('clock', 'text-[16px]')}
+        <span class="text-label-sm">${due.text}</span>
+      </div>
+    </button>
+  </div>`;
 }
 
 export function render() {
@@ -33,7 +51,7 @@ export function render() {
         <button data-nav="#/timer" class="text-secondary">${icon('forward')}</button>
       </div>
       <div data-ring-wrap class="relative">
-        ${running ? '<div class="absolute inset-2 rounded-full border-2 border-accent-soft opacity-20 pulse-ring pointer-events-none"></div>' : ''}
+        <div data-pulse class="absolute inset-2 rounded-full border-2 border-accent-soft opacity-20 pulse-ring pointer-events-none ${running ? '' : 'hidden'}"></div>
         ${progressRing({
           progress: phaseProgress(t), size: 224, stroke: 4,
           centerHtml: `
@@ -76,48 +94,47 @@ export function render() {
         <span class="text-label-md uppercase tracking-wider text-secondary">Next Task</span>
         <button data-nav="#/tasks" class="text-secondary">${icon('forward')}</button>
       </div>
-      ${task ? `
-      <div class="flex items-start gap-3">
-        <input data-task-toggle="${task.id}" class="task-checkbox mt-1" type="checkbox" />
-        <button data-nav="#/task/${task.id}" class="flex flex-col text-left">
-          <p class="text-body-md text-on-surface leading-snug">${esc(task.title)}</p>
-          <div class="flex items-center gap-1 mt-2 ${dueLabel(task).cls === 'text-error' ? 'text-error' : 'text-accent-soft'}">
-            ${icon('clock', 'text-[16px]')}
-            <span class="text-label-sm">${dueLabel(task).text}</span>
-          </div>
-        </button>
-      </div>` : `<p class="text-body-md text-secondary">Nothing due — enjoy the calm or add a task.</p>`}
+      <div data-next-task>${nextTaskBody(task)}</div>
     </div>
   </main>
   ${bottomNav('#/home')}`;
 }
 
 export function mount(root) {
-  root.querySelector('[data-action="toggle"]').addEventListener('click', () => {
-    const t = getTimer();
-    if (t.status === 'running') pauseTimer(); else startTimer();
-    rerender();
-  });
-  root.querySelector('[data-action="skip"]').addEventListener('click', () => {
-    skipPhase();
-    rerender();
-  });
-  const taskCb = root.querySelector('[data-task-toggle]');
-  if (taskCb) {
-    taskCb.addEventListener('change', () => {
-      toggleTask(taskCb.getAttribute('data-task-toggle'));
-      setTimeout(rerender, 150);
-    });
-  }
-
   const ringWrap = root.querySelector('[data-ring-wrap]');
   const clock = root.querySelector('[data-clock]');
   const phaseEl = root.querySelector('[data-phase]');
-  const off = onTimerChange(() => {
+  const pulse = root.querySelector('[data-pulse]');
+  const toggleBtn = root.querySelector('[data-action="toggle"]');
+
+  // Every timer control routes back through here: they all mutate the engine, and
+  // the engine emits on every mutation, so the card paints itself from one place
+  // instead of each button re-rendering the page it is sitting on.
+  const paintTimer = () => {
     const t = getTimer();
+    const running = t.status === 'running';
     clock.textContent = fmtClock(remainingMs(t));
     phaseEl.textContent = t.phase === 'focus' ? 'Deep Work' : 'Break';
+    toggleBtn.textContent = running ? 'Pause' : 'Start';
+    pulse.classList.toggle('hidden', !running);
     setRingProgress(ringWrap, phaseProgress(t));
+  };
+  const off = onTimerChange(paintTimer);
+
+  toggleBtn.addEventListener('click', () => {
+    if (getTimer().status === 'running') pauseTimer(); else startTimer();
   });
+  root.querySelector('[data-action="skip"]').addEventListener('click', skipPhase);
+
+  // Delegated — the card redraws itself below, so the checkbox in it is replaced.
+  const nextWrap = root.querySelector('[data-next-task]');
+  nextWrap.addEventListener('change', (e) => {
+    const cb = e.target.closest('[data-task-toggle]');
+    if (!cb) return;
+    toggleTask(cb.getAttribute('data-task-toggle'));
+    // Let the checkbox animation land before the task it belongs to is replaced.
+    setTimeout(() => { nextWrap.innerHTML = nextTaskBody(nextTask()); }, 150);
+  });
+
   return off;
 }
